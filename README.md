@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CoverGrail
 
-## Getting Started
+Premium Next.js MVP for comic collectors who want **pre-submission grade estimates** before paying third-party grading fees. Positioning: **before you slab it, scan it.** CoverGrail is **not affiliated with CGC or CBCS**; predictions are **educational pre-submission estimates**.
 
-First, run the development server:
+## Stack
+
+- Next.js App Router (TypeScript)
+- Tailwind CSS v4
+- Supabase Auth + Postgres + Storage
+- OpenAI vision → structured JSON (`lib/ai`) server-side only (or `MOCK_GRADE=true` for demos)
+- Stripe-ready pricing UI + stub checkout route
+
+## Local setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Create a Supabase project and run [`supabase/migrations/001_initial_schema.sql`](supabase/migrations/001_initial_schema.sql) in the SQL editor (or Supabase CLI).
+
+3. In Supabase Authentication → URL configuration, add redirect URLs:
+
+- `http://localhost:3000/auth/callback`
+- Your production `/auth/callback`
+
+4. Copy environment variables:
+
+```bash
+cp .env.example .env.local
+```
+
+Fill `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL`, and `OPENAI_API_KEY` (unless using mock grading).
+
+5. Run the dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Product flows
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Landing: headline/subhead, problem → how it works → example result → pricing preview → dealer CTA → disclaimer.
+- Magic-link auth at `/login`.
+- App: `/dashboard`, `/scans/new`, `/scans/[id]`, `/collection`, `/pricing`.
+- Uploads go to private bucket `scan-images` at `{user_id}/{scan_id}/…`.
+- `POST /api/grade-scan` with `{ "scanId": "…" }` signs image URLs, runs OpenAI (or mock), writes `scan_results`, decrements `profiles.free_scans_remaining` on **free** plan after success.
 
-## Learn More
+## Stripe
 
-To learn more about Next.js, take a look at the following resources:
+Enable subscribe buttons when both `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are set. Implement Checkout Session creation in [`src/app/api/create-checkout-session/route.ts`](src/app/api/create-checkout-session/route.ts) and verify webhooks in [`src/app/api/webhooks/stripe/route.ts`](src/app/api/webhooks/stripe/route.ts).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Disclaimer
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Language emphasizes **likely grade range**, **pre-submission**, and non-affiliation with CGC/CBCS everywhere.

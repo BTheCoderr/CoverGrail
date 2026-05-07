@@ -1,0 +1,12 @@
+# Next.js on Netlify (Runtime v5 / OpenNext plugin)
+# https://docs.netlify.com/build/frameworks/framework-setup-guides/nextjs/overview/
+
+[build]
+  command = "npm run build"
+  # Do not set `publish` here — @netlify/plugin-nextjs sets the correct output.
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  NODE_VERSION = "20"
