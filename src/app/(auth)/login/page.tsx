@@ -1,5 +1,10 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { loginAction } from "@/app/actions/auth";
+
+export const metadata: Metadata = {
+  title: "Sign in",
+};
 
 export default async function LoginPage({
   searchParams,
@@ -54,6 +59,14 @@ export default async function LoginPage({
         <p className="mt-8 text-center text-xs text-zinc-500">
           CoverGrail is not affiliated with CGC or CBCS and does not guarantee
           official grading outcomes.
+        </p>
+        <p className="mt-4 text-center text-xs text-zinc-600">
+          <Link
+            href="/api/health/supabase"
+            className="underline decoration-zinc-600 underline-offset-2 hover:text-zinc-400"
+          >
+            Check Supabase connectivity (deploy diagnostics)
+          </Link>
         </p>
       </div>
       <Link

@@ -320,6 +320,22 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   console.warn("[stripe-webhook] invoice.payment_failed processed for subscription", subId);
 }
 
+/**
+ * Browser/health check only. Stripe always POSTs with `stripe-signature`.
+ */
+export async function GET() {
+  return NextResponse.json(
+    {
+      ok: true,
+      endpoint: "/api/webhooks/stripe",
+      usage:
+        "Configure Stripe webhooks to send POST requests here. GET is only for confirming the route is deployed.",
+      stripeMethod: "POST",
+    },
+    { status: 200 },
+  );
+}
+
 export async function POST(request: Request) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
