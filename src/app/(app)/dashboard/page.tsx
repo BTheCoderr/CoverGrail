@@ -60,6 +60,15 @@ export default async function DashboardPage({
           refresh this page while Stripe finishes processing your payment.
         </p>
       ) : null}
+      {params.checkout === "cancelled" ? (
+        <p className="rounded-xl border border-zinc-600/40 bg-zinc-900/40 px-4 py-3 text-sm text-zinc-300">
+          Checkout was cancelled—no charge was made. You can finish subscribing anytime from{" "}
+          <Link href="/pricing" className="font-semibold text-amber-400 hover:underline">
+            Pricing
+          </Link>
+          .
+        </p>
+      ) : null}
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-400/90">
           Dashboard

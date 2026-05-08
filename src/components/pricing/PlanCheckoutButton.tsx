@@ -14,6 +14,7 @@ export function PlanCheckoutButton({ plan, disabled, className, children }: Prop
     const res = await fetch("/api/create-checkout-session", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({ plan }),
     });
     const data = (await res.json()) as { url?: string; error?: string };

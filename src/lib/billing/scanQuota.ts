@@ -12,12 +12,23 @@ export function subscriptionIsActiveForScans(status: string | null | undefined):
   return status === "active" || status === "trialing";
 }
 
+/** Monthly subscription scans (spec): only `active` status qualifies for included monthly scans. */
+export function subscriptionAllowsMonthlyQuotaConsumption(
+  status: string | null | undefined,
+): boolean {
+  return status === "active";
+}
+
 export function userHasScanQuota(p: ScanQuotaProfile): boolean {
   if ((p.free_scans_remaining ?? 0) > 0) return true;
   if ((p.paid_scan_credits ?? 0) > 0) return true;
   const limit = p.monthly_scan_limit ?? 0;
   const used = p.scans_used_this_period ?? 0;
-  if (subscriptionIsActiveForScans(p.subscription_status) && limit > 0 && used < limit) {
+  if (
+    subscriptionAllowsMonthlyQuotaConsumption(p.subscription_status) &&
+    limit > 0 &&
+    used < limit
+  ) {
     return true;
   }
   return false;
@@ -56,7 +67,7 @@ export async function consumeScanAfterGrade(
   }
 
   if (
-    subscriptionIsActiveForScans(p.subscription_status as string | null) &&
+    subscriptionAllowsMonthlyQuotaConsumption(p.subscription_status as string | null) &&
     (p.monthly_scan_limit ?? 0) > 0
   ) {
     await supabase

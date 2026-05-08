@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
-import type Stripe from "stripe";
+import Stripe from "stripe";
 
 export const runtime = "nodejs";
 
@@ -19,6 +19,7 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
+    console.error("[stripe-checkout] Invalid JSON body");
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
   const plan = typeof planRaw === "string" ? planRaw : undefined;
 
   if (!plan || !PLANS.includes(plan as Plan)) {
+    console.error("[stripe-checkout] Invalid plan:", plan ?? "(missing)");
     return NextResponse.json(
       { error: "Invalid plan. Expected single_scan, collector, or dealer." },
       { status: 400 },
@@ -37,18 +39,30 @@ export async function POST(request: Request) {
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "");
   if (!siteUrl) {
+    console.error("[stripe-checkout] NEXT_PUBLIC_SITE_URL is not set");
     return NextResponse.json({ error: "NEXT_PUBLIC_SITE_URL is not set" }, { status: 503 });
   }
 
   const priceId = priceIdForPlan(plan as Plan);
   if (!priceId) {
-    return NextResponse.json({ error: "Stripe price not configured" }, { status: 503 });
+    const missing =
+      plan === "single_scan"
+        ? "STRIPE_PRICE_SINGLE_SCAN"
+        : plan === "collector"
+          ? "STRIPE_PRICE_COLLECTOR_MONTHLY"
+          : "STRIPE_PRICE_DEALER_MONTHLY";
+    console.error("[stripe-checkout] Missing Stripe price env:", missing);
+    return NextResponse.json(
+      { error: `Stripe price not configured (${missing})` },
+      { status: 503 },
+    );
   }
 
   let stripe: ReturnType<typeof getStripe>;
   try {
     stripe = getStripe();
-  } catch {
+  } catch (e) {
+    console.error("[stripe-checkout]", e instanceof Error ? e.message : "Stripe init failed");
     return NextResponse.json({ error: "Stripe is not configured" }, { status: 503 });
   }
 
@@ -58,6 +72,7 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser();
 
   if (!user) {
+    console.error("[stripe-checkout] Unauthenticated checkout attempt");
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -79,12 +94,26 @@ export async function POST(request: Request) {
 
   let customerId = profile?.stripe_customer_id as string | null | undefined;
   if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: user.email ?? undefined,
-      metadata: { user_id: user.id },
-    });
-    customerId = customer.id;
-    await supabase.from("profiles").update({ stripe_customer_id: customerId }).eq("id", user.id);
+    try {
+      const customer = await stripe.customers.create({
+        email: user.email ?? undefined,
+        metadata: { user_id: user.id },
+      });
+      customerId = customer.id;
+      const { error: custErr } = await supabase
+        .from("profiles")
+        .update({ stripe_customer_id: customerId })
+        .eq("id", user.id);
+      if (custErr) {
+        console.error("[stripe-checkout] Failed to save stripe_customer_id:", custErr.message);
+        return NextResponse.json({ error: "Could not save billing profile" }, { status: 500 });
+      }
+    } catch (e) {
+      const msg =
+        e instanceof Stripe.errors.StripeError ? e.message : "Stripe customer creation failed";
+      console.error("[stripe-checkout] Stripe customer error:", msg);
+      return NextResponse.json({ error: "Could not create Stripe customer" }, { status: 502 });
+    }
   }
 
   const metadata = { user_id: user.id, plan };
@@ -105,11 +134,19 @@ export async function POST(request: Request) {
         }),
   };
 
-  const session = await stripe.checkout.sessions.create(sessionParams);
+  try {
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
-  if (!session.url) {
-    return NextResponse.json({ error: "Checkout session missing redirect URL" }, { status: 500 });
+    if (!session.url) {
+      console.error("[stripe-checkout] Session created without redirect URL");
+      return NextResponse.json({ error: "Checkout session missing redirect URL" }, { status: 500 });
+    }
+
+    return NextResponse.json({ url: session.url });
+  } catch (e) {
+    const msg =
+      e instanceof Stripe.errors.StripeError ? `${e.type}: ${e.message}` : "session_create_failed";
+    console.error("[stripe-checkout] Stripe session creation failed:", msg);
+    return NextResponse.json({ error: "Stripe Checkout session could not be created" }, { status: 502 });
   }
-
-  return NextResponse.json({ url: session.url });
 }
