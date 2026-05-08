@@ -11,6 +11,9 @@ export function MarketingFooter() {
           <Disclaimer />
         </div>
         <div className="flex flex-wrap gap-6 text-sm text-zinc-400">
+          <Link href="/grading-guide" className="hover:text-amber-400">
+            Grading guide
+          </Link>
           <Link href="/pricing" className="hover:text-amber-400">
             Pricing
           </Link>

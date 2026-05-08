@@ -1,4 +1,8 @@
 import { gradeComicPhotos } from "@/lib/ai/gradeComic";
+import {
+  consumeScanAfterGrade,
+  userHasScanQuota,
+} from "@/lib/billing/scanQuota";
 import { createClient } from "@/lib/supabase/server";
 import { sortScanImages } from "@/lib/scans/sort-images";
 import { NextResponse } from "next/server";
@@ -51,6 +55,21 @@ export async function POST(request: Request) {
       .update({ status: "complete", error_message: null })
       .eq("id", scanId);
     return NextResponse.json({ ok: true, cached: true });
+  }
+
+  const { data: quotaProfile } = await supabase
+    .from("profiles")
+    .select(
+      "free_scans_remaining, paid_scan_credits, subscription_status, monthly_scan_limit, scans_used_this_period",
+    )
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!userHasScanQuota(quotaProfile ?? {})) {
+    return NextResponse.json(
+      { error: "Scan quota exceeded. Upgrade or buy credits on Pricing." },
+      { status: 402 },
+    );
   }
 
   await supabase
@@ -143,25 +162,7 @@ export async function POST(request: Request) {
       .update({ status: "complete", error_message: null })
       .eq("id", scanId);
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("plan, free_scans_remaining")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (
-      profile &&
-      profile.plan === "free" &&
-      typeof profile.free_scans_remaining === "number" &&
-      profile.free_scans_remaining > 0
-    ) {
-      await supabase
-        .from("profiles")
-        .update({
-          free_scans_remaining: profile.free_scans_remaining - 1,
-        })
-        .eq("id", user.id);
-    }
+    await consumeScanAfterGrade(supabase, user.id);
 
     return NextResponse.json({ ok: true });
   } catch (e) {

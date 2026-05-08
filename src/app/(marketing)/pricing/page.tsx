@@ -1,4 +1,5 @@
 import { Disclaimer } from "@/components/disclaimer";
+import { PlanCheckoutButton } from "@/components/pricing/PlanCheckoutButton";
 import { isStripeCheckoutReady } from "@/lib/stripe";
 import Link from "next/link";
 
@@ -8,57 +9,101 @@ type Tier = {
   subtitle: string;
   bullets: string[];
   highlight?: boolean;
-  mode: "link" | "disabled" | "stripe";
+  mode: "link" | "stripe" | "mailto";
   href?: string;
+  mailtoHref?: string;
   buttonLabel: string;
+  checkoutPlan?: "single_scan" | "collector" | "dealer";
 };
+
+const ENTERPRISE_MAIL =
+  "mailto:hello@covergrail.com?subject=CoverGrail%20Enterprise%20Licensing";
 
 const TIERS: Tier[] = [
   {
-    name: "Free",
+    name: "Free Starter",
     price: "$0",
-    subtitle: "3 scans",
+    subtitle: "Start here",
     bullets: [
-      "Likely grade range",
+      "Includes 3 free scans",
+      "Basic grade range",
       "Defect breakdown",
-      "Submit / press first / sell raw guidance",
+      "Save scan history",
     ],
     mode: "link",
     href: "/login",
     buttonLabel: "Start free",
   },
   {
-    name: "Pay per scan",
+    name: "Single Scan",
     price: "$1.99",
-    subtitle: "each scan",
-    bullets: ["Full structured report", "No subscription commitment"],
-    mode: "disabled",
-    buttonLabel: "Coming soon",
+    subtitle: "One-time",
+    bullets: [
+      "Adds 1 paid scan credit",
+      "Best for testing one book before submission",
+    ],
+    mode: "stripe",
+    checkoutPlan: "single_scan",
+    buttonLabel: "Buy 1 scan",
   },
   {
     name: "Collector",
-    price: "$19",
+    price: "$19.99",
     subtitle: "/ month · 25 scans",
-    bullets: ["Batch-friendly workflow", "History & confirmed grades"],
+    bullets: [
+      "Collection history",
+      "Confirmed grade tracking",
+      "Best for active collectors",
+    ],
     highlight: true,
     mode: "stripe",
+    checkoutPlan: "collector",
     buttonLabel: "Subscribe",
   },
   {
-    name: "Dealer",
-    price: "$99",
+    name: "Pro Dealer",
+    price: "$150",
     subtitle: "/ month · 250 scans",
-    bullets: ["Higher throughput", "Priority roadmap input"],
+    bullets: [
+      "Bulk lot workflow placeholder",
+      "Exportable reports placeholder",
+      "Priority roadmap access",
+      "Best for dealers, estate buyers, and shop owners",
+    ],
     mode: "stripe",
+    checkoutPlan: "dealer",
     buttonLabel: "Subscribe",
+  },
+  {
+    name: "Enterprise",
+    price: "Custom",
+    subtitle: "Starting at $10,000/year",
+    bullets: [
+      "API access placeholder",
+      "White-label/integration support placeholder",
+      "For retailers, auction houses, and platforms",
+    ],
+    mode: "mailto",
+    mailtoHref: ENTERPRISE_MAIL,
+    buttonLabel: "Contact Sales",
   },
 ];
 
-export default function PricingPage() {
+export default async function PricingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string }>;
+}) {
+  const params = await searchParams;
   const stripeReady = isStripeCheckoutReady();
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-16">
+    <main className="mx-auto max-w-7xl px-4 py-16">
+      {params.checkout === "cancelled" ? (
+        <p className="mx-auto mb-10 max-w-xl rounded-xl border border-zinc-600/40 bg-zinc-900/40 px-4 py-3 text-center text-sm text-zinc-300">
+          Checkout was cancelled. No charges were made—you can try again whenever you are ready.
+        </p>
+      ) : null}
       <div className="mx-auto max-w-2xl text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-400/90">
           Pricing
@@ -67,12 +112,12 @@ export default function PricingPage() {
           Know before you slab it
         </h1>
         <p className="mt-4 text-zinc-400">
-          Start free, then scale with pay-per-scan or monthly tiers. Stripe Checkout
-          activates once keys and prices are configured.
+          Move up the ladder—from free education to pay-per-scan, subscriptions, and enterprise
+          licensing. Stripe Checkout powers paid tiers once keys and prices are configured.
         </p>
       </div>
 
-      <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-3 xl:gap-8">
         {TIERS.map((t) => (
           <div
             key={t.name}
@@ -90,16 +135,14 @@ export default function PricingPage() {
                 <li key={b}>• {b}</li>
               ))}
             </ul>
-            {t.mode === "stripe" ? (
-              <form action="/api/create-checkout-session" method="post" className="mt-8">
-                <button
-                  type="submit"
-                  disabled={!stripeReady}
-                  className="flex h-11 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950 hover:bg-amber-300 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
-                >
-                  {stripeReady ? t.buttonLabel : "Connect Stripe to enable"}
-                </button>
-              </form>
+            {t.mode === "stripe" && t.checkoutPlan ? (
+              <PlanCheckoutButton
+                plan={t.checkoutPlan}
+                disabled={!stripeReady}
+                className="mt-8 flex h-11 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950 hover:bg-amber-300 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
+              >
+                {stripeReady ? t.buttonLabel : "Configure Stripe to enable"}
+              </PlanCheckoutButton>
             ) : null}
             {t.mode === "link" && t.href ? (
               <Link
@@ -109,34 +152,20 @@ export default function PricingPage() {
                 {t.buttonLabel}
               </Link>
             ) : null}
-            {t.mode === "disabled" ? (
-              <span className="mt-8 inline-flex h-11 cursor-not-allowed items-center justify-center rounded-xl border border-zinc-800 text-sm font-semibold text-zinc-600">
+            {t.mode === "mailto" && t.mailtoHref ? (
+              <a
+                href={t.mailtoHref}
+                className="mt-8 inline-flex h-11 items-center justify-center rounded-xl border border-zinc-600 text-sm font-semibold text-zinc-100 hover:border-amber-500/40 hover:text-amber-400"
+              >
                 {t.buttonLabel}
-              </span>
+              </a>
             ) : null}
           </div>
         ))}
       </div>
 
-      <section className="mx-auto mt-16 max-w-xl rounded-2xl border border-zinc-800/80 bg-zinc-900/30 px-8 py-10 text-center">
-        <h2 className="text-lg font-semibold text-zinc-50">Bulk Dealer</h2>
-        <p className="mt-3 text-sm text-zinc-400">
-          Custom SLAs, throughput, and onboarding for large inventories or retail
-          intake.
-        </p>
-        <a
-          href="mailto:sales@covergrail.com"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-xl border border-zinc-600 px-6 text-sm font-semibold text-zinc-100 hover:border-amber-500/40 hover:text-amber-400"
-        >
-          Contact sales
-        </a>
-      </section>
-
-      <div className="mx-auto mt-12 max-w-2xl space-y-4">
+      <div className="mx-auto mt-12 max-w-2xl">
         <Disclaimer className="text-center text-sm text-zinc-500" />
-        <p className="text-center text-xs text-zinc-600">
-          Fees shown are illustrative until billing is enabled via Stripe.
-        </p>
       </div>
     </main>
   );

@@ -1,16 +1,10 @@
 "use server";
 
+import { userHasScanQuota } from "@/lib/billing/scanQuota";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
 const MAX_BYTES = 12 * 1024 * 1024;
-
-const UNLIMITED_PLANS = new Set([
-  "collector",
-  "dealer",
-  "bulk",
-  "pay_per_scan",
-]);
 
 function extFromFile(file: File): string {
   const mime = file.type;
@@ -28,7 +22,9 @@ async function assertUnderQuota(userId: string, email: string | undefined) {
   const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
-    .select("plan, free_scans_remaining")
+    .select(
+      "free_scans_remaining, paid_scan_credits, subscription_status, monthly_scan_limit, scans_used_this_period",
+    )
     .eq("id", userId)
     .maybeSingle();
 
@@ -44,11 +40,7 @@ async function assertUnderQuota(userId: string, email: string | undefined) {
     return { ok: true as const };
   }
 
-  if (UNLIMITED_PLANS.has(profile.plan as string)) {
-    return { ok: true as const };
-  }
-
-  if ((profile.free_scans_remaining ?? 0) <= 0) {
+  if (!userHasScanQuota(profile)) {
     return { ok: false as const, reason: "quota" as const };
   }
 

@@ -13,7 +13,10 @@ export default function MarketingLayout({
           <Link href="/" className="font-semibold tracking-tight">
             Cover<span className="text-amber-400">Grail</span>
           </Link>
-          <nav className="flex items-center gap-4 text-sm text-zinc-400">
+          <nav className="flex flex-wrap items-center gap-4 text-sm text-zinc-400">
+            <Link href="/grading-guide" className="hover:text-amber-400">
+              Grading guide
+            </Link>
             <Link href="/pricing" className="hover:text-amber-400">
               Pricing
             </Link>
