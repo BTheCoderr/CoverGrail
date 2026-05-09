@@ -28,11 +28,14 @@ function loginMessage(reason?: string, detail?: string, status?: string): string
     case "auth-health-fetch-failed":
     case "fetch-failed":
       return (
-        `auth-health-fetch-failed: Could not reach Supabase Auth (${detail ? safeDecodeQuery(detail).slice(0, 200) : "network"}). ` +
-        "Confirm the project is active and keys match Supabase → Settings → API."
+        "Diagnostics could not reach Supabase Auth, but you can still try sending a magic link. " +
+        `(Technical detail: ${detail ? safeDecodeQuery(detail).slice(0, 200) : "network"}.)`
       );
     case "auth-health-non-200":
-      return `auth-health-non-200: Supabase /auth/v1/health returned HTTP ${status ?? "?"}. Verify NEXT_PUBLIC_SUPABASE_ANON_KEY and URL.`;
+      return (
+        "Diagnostics could not reach Supabase Auth (unexpected HTTP status), but you can still try sending a magic link. " +
+        `(HTTP ${status ?? "?"}.)`
+      );
     case "sign-in-with-otp-failed":
     case "sign-in-failed":
       return `sign-in-with-otp-failed: ${detail ? safeDecodeQuery(detail) : "Magic link request failed."}`;
@@ -47,6 +50,7 @@ export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{
+    sent?: string;
     check_email?: string;
     error?: string;
     reason?: string;
@@ -61,6 +65,17 @@ export default async function LoginPage({
     params.error && !params.reason ? decodeURIComponent(params.error) : null;
   const alertText = reasonMessage ?? legacyError;
 
+  const showSentBanner = Boolean(params.sent) || Boolean(params.check_email);
+
+  const isDiagnosticSoft =
+    params.reason === "auth-health-fetch-failed" ||
+    params.reason === "auth-health-non-200" ||
+    params.reason === "fetch-failed";
+
+  const alertBoxClass = isDiagnosticSoft
+    ? "border border-amber-500/25 bg-amber-950/25 px-4 py-3 text-sm text-amber-100/95 whitespace-pre-wrap break-words"
+    : "border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-200 whitespace-pre-wrap break-words";
+
   return (
     <main className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-16">
       <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-8">
@@ -71,7 +86,7 @@ export default async function LoginPage({
           Magic link authentication powered by Supabase.
         </p>
 
-        {params.check_email ? (
+        {showSentBanner ? (
           <p className="mt-6 rounded-xl border border-amber-500/25 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
             Check your email for the sign-in link. You can close this tab once
             it arrives.
@@ -79,9 +94,7 @@ export default async function LoginPage({
         ) : null}
 
         {alertText ? (
-          <p className="mt-6 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-200 whitespace-pre-wrap break-words">
-            {alertText}
-          </p>
+          <p className={`mt-6 rounded-xl ${alertBoxClass}`}>{alertText}</p>
         ) : null}
 
         <form action={loginAction} className="mt-8 space-y-4">

@@ -1,10 +1,15 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { probeSupabaseAuthHealth } from "@/lib/supabase/authHealthProbe";
 import { getSupabasePublicApiKey, getSupabaseUrl } from "@/lib/supabase/env";
 import { getPublicSiteOrigin } from "@/lib/siteOrigin";
 import { redirect } from "next/navigation";
+
+function otpErrorCode(err: unknown): string | undefined {
+  if (!err || typeof err !== "object" || !("code" in err)) return undefined;
+  const c = (err as { code?: unknown }).code;
+  return typeof c === "string" && c.length > 0 ? c : undefined;
+}
 
 export async function signOutAction() {
   const supabase = await createClient();
@@ -33,19 +38,6 @@ export async function loginAction(formData: FormData) {
     redirect("/login?reason=invalid-supabase-url");
   }
 
-  const probe = await probeSupabaseAuthHealth(url, apiKey);
-  if (!probe.ok) {
-    if (probe.status !== undefined) {
-      console.error("[auth] auth-health-non-200", probe.status);
-      redirect(`/login?reason=auth-health-non-200&status=${encodeURIComponent(String(probe.status))}`);
-    }
-    console.error("[auth] auth-health-fetch-failed", probe.error);
-    redirect(
-      `/login?reason=auth-health-fetch-failed&detail=${encodeURIComponent(probe.error ?? "unknown")}`,
-    );
-  }
-  console.log("[auth] auth health ok status=", probe.status);
-
   let supabase;
   try {
     supabase = await createClient();
@@ -68,22 +60,17 @@ export async function loginAction(formData: FormData) {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     const safe = msg.replace(/\s+/g, " ").slice(0, 200);
-    console.error("[auth] signInWithOtp failed:", safe);
+    const code = otpErrorCode(e);
+    console.error("[auth] signInWithOtp failed:", safe, "code=", code ?? "n/a");
     redirect(`/login?reason=sign-in-with-otp-failed&detail=${encodeURIComponent(safe)}`);
   }
 
   if (otpError) {
     const safe = otpError.message.replace(/\s+/g, " ").slice(0, 200);
-    const status =
-      typeof otpError === "object" &&
-      otpError !== null &&
-      "status" in otpError &&
-      typeof (otpError as { status?: unknown }).status === "number"
-        ? (otpError as { status: number }).status
-        : "";
-    console.error("[auth] signInWithOtp failed:", status, safe);
+    const code = otpErrorCode(otpError);
+    console.error("[auth] signInWithOtp failed:", safe, "code=", code ?? "n/a");
     redirect(`/login?reason=sign-in-with-otp-failed&detail=${encodeURIComponent(safe)}`);
   }
 
-  redirect("/login?check_email=1");
+  redirect("/login?sent=1");
 }

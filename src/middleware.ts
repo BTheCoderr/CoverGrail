@@ -35,7 +35,10 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
-/** Only run session refresh on protected app routes — not /login, /api, marketing pages, etc. */
+/**
+ * Session gate only for app shells. `/login`, `/auth/callback`, `/api/*`, marketing routes
+ * are excluded so magic-link auth and diagnostics are never blocked here.
+ */
 export const config = {
   matcher: [
     "/dashboard",
