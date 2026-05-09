@@ -32,6 +32,8 @@ function loginMessage(
         return `Too many login link requests. Please wait about ${rateSeconds} seconds before trying again.`;
       }
       return "Too many login link requests. Please wait about one minute before trying again.";
+    case "auth":
+      return "Authentication failed. Please try again.";
     case "missing-env":
       return (
         "missing-env: No Supabase URL or public API key on this server. In Netlify → Environment variables, set " +
@@ -62,6 +64,16 @@ function loginMessage(
   }
 }
 
+/** Legacy ?error=auth from /auth/callback should not display as the literal "auth". */
+function normalizeLegacyErrorMessage(decoded: string | null): string | null {
+  if (!decoded) return null;
+  const t = decoded.trim();
+  if (t.toLowerCase() === "auth") {
+    return "Authentication failed. Please try again.";
+  }
+  return decoded;
+}
+
 export default async function LoginPage({
   searchParams,
 }: {
@@ -79,11 +91,14 @@ export default async function LoginPage({
 
   const rateSeconds = parseRateLimitSeconds(params.seconds);
   const reasonMessage = loginMessage(params.reason, params.detail, params.status, rateSeconds);
-  const legacyError =
-    params.error && !params.reason ? decodeURIComponent(params.error) : null;
+
+  const legacyRaw =
+    params.error && !params.reason ? safeDecodeQuery(params.error) : null;
+  const legacyError = normalizeLegacyErrorMessage(legacyRaw);
+
   const alertText = reasonMessage ?? legacyError;
 
-  const showSentBanner = Boolean(params.sent) || Boolean(params.check_email);
+  const linkSentSuccess = params.sent === "1" || Boolean(params.check_email);
 
   const isDiagnosticSoft =
     params.reason === "auth-health-fetch-failed" ||
@@ -107,18 +122,23 @@ export default async function LoginPage({
           Magic link authentication powered by Supabase.
         </p>
 
-        {showSentBanner ? (
-          <p className="mt-6 rounded-xl border border-amber-500/25 bg-amber-400/10 px-4 py-3 text-sm text-amber-100">
-            Check your email for the sign-in link. You can close this tab once
-            it arrives.
-          </p>
+        {linkSentSuccess ? (
+          <div className="mt-6 space-y-2 rounded-xl border border-emerald-500/30 bg-emerald-950/30 px-4 py-3 text-sm text-emerald-100/95">
+            <p className="font-medium text-emerald-50">
+              Login link sent. Check your email inbox and spam folder.
+            </p>
+            <p className="text-emerald-100/85">
+              Do not request another link right away or Supabase may temporarily
+              rate-limit you.
+            </p>
+          </div>
         ) : null}
 
         {alertText ? (
           <p className={`mt-6 rounded-xl ${alertBoxClass}`}>{alertText}</p>
         ) : null}
 
-        <LoginEmailForm rateLimitCooldown={isRateLimit} />
+        <LoginEmailForm rateLimitCooldown={isRateLimit} linkJustSent={linkSentSuccess} />
 
         <p className="mt-8 text-center text-xs text-zinc-500">
           CoverGrail is not affiliated with CGC or CBCS and does not guarantee

@@ -8,9 +8,11 @@ const RATE_LIMIT_COOLDOWN_SEC = 60;
 type Props = {
   /** True when returning from server after `over_email_send_rate_limit`. */
   rateLimitCooldown: boolean;
+  /** User successfully requested a magic link (`sent=1` or legacy `check_email`). */
+  linkJustSent: boolean;
 };
 
-export function LoginEmailForm({ rateLimitCooldown }: Props) {
+export function LoginEmailForm({ rateLimitCooldown, linkJustSent }: Props) {
   const [cooldown, setCooldown] = useState(rateLimitCooldown ? RATE_LIMIT_COOLDOWN_SEC : 0);
 
   useEffect(() => {
@@ -22,6 +24,11 @@ export function LoginEmailForm({ rateLimitCooldown }: Props) {
   }, [cooldown]);
 
   const disabled = cooldown > 0;
+
+  const defaultLabel = "Email me a login link";
+  const sentLabel = "Send another login link";
+  const buttonLabel =
+    cooldown > 0 ? `Wait ${cooldown}s…` : linkJustSent ? sentLabel : defaultLabel;
 
   return (
     <form action={loginAction} className="mt-8 space-y-4">
@@ -43,7 +50,7 @@ export function LoginEmailForm({ rateLimitCooldown }: Props) {
           disabled ? "cursor-not-allowed opacity-50" : ""
         }`}
       >
-        {cooldown > 0 ? `Wait ${cooldown}s…` : "Email me a login link"}
+        {buttonLabel}
       </button>
     </form>
   );
