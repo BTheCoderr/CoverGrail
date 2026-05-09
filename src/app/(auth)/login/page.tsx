@@ -6,12 +6,60 @@ export const metadata: Metadata = {
   title: "Sign in",
 };
 
+function safeDecodeQuery(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+}
+
+function loginMessage(reason?: string, detail?: string, status?: string): string | null {
+  switch (reason) {
+    case "missing-env":
+      return (
+        "missing-env: No Supabase URL or public API key on this server. In Netlify → Environment variables, set " +
+        "NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY (legacy JWT `eyJ…` or publishable `sb_publishable_…` in the same variable). " +
+        "Clear-cache redeploy after changes."
+      );
+    case "invalid-supabase-url":
+    case "invalid-url":
+      return "invalid-supabase-url: NEXT_PUBLIC_SUPABASE_URL is not a valid URL. Fix it and redeploy.";
+    case "auth-health-fetch-failed":
+    case "fetch-failed":
+      return (
+        `auth-health-fetch-failed: Could not reach Supabase Auth (${detail ? safeDecodeQuery(detail).slice(0, 200) : "network"}). ` +
+        "Confirm the project is active and keys match Supabase → Settings → API."
+      );
+    case "auth-health-non-200":
+      return `auth-health-non-200: Supabase /auth/v1/health returned HTTP ${status ?? "?"}. Verify NEXT_PUBLIC_SUPABASE_ANON_KEY and URL.`;
+    case "sign-in-with-otp-failed":
+    case "sign-in-failed":
+      return `sign-in-with-otp-failed: ${detail ? safeDecodeQuery(detail) : "Magic link request failed."}`;
+    case "missing_email":
+      return "Please enter your email address.";
+    default:
+      return null;
+  }
+}
+
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ check_email?: string; error?: string }>;
+  searchParams: Promise<{
+    check_email?: string;
+    error?: string;
+    reason?: string;
+    detail?: string;
+    status?: string;
+  }>;
 }) {
   const params = await searchParams;
+
+  const reasonMessage = loginMessage(params.reason, params.detail, params.status);
+  const legacyError =
+    params.error && !params.reason ? decodeURIComponent(params.error) : null;
+  const alertText = reasonMessage ?? legacyError;
 
   return (
     <main className="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-16">
@@ -30,9 +78,9 @@ export default async function LoginPage({
           </p>
         ) : null}
 
-        {params.error ? (
-          <p className="mt-6 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-            {decodeURIComponent(params.error)}
+        {alertText ? (
+          <p className="mt-6 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-sm text-red-200 whitespace-pre-wrap break-words">
+            {alertText}
           </p>
         ) : null}
 
@@ -62,7 +110,7 @@ export default async function LoginPage({
         </p>
         <p className="mt-4 text-center text-xs text-zinc-600">
           <Link
-            href="/api/health/supabase"
+            href="/api/health/auth-config"
             className="underline decoration-zinc-600 underline-offset-2 hover:text-zinc-400"
           >
             Check Supabase connectivity (deploy diagnostics)

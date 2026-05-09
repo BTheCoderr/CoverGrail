@@ -1,13 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getSupabasePublicApiKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 export function createSupabaseMiddlewareClient(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = getSupabaseUrl();
+  const anon = getSupabasePublicApiKey();
 
   if (!url || !anon) {
     return {

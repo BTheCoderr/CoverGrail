@@ -4,8 +4,6 @@ import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware";
 const protectedPrefixes = ["/dashboard", "/scans", "/collection"];
 
 export async function middleware(request: NextRequest) {
-  const { supabase, response } = createSupabaseMiddlewareClient(request);
-
   const { pathname } = request.nextUrl;
 
   const isProtected = protectedPrefixes.some(
@@ -13,8 +11,10 @@ export async function middleware(request: NextRequest) {
   );
 
   if (!isProtected) {
-    return response;
+    return NextResponse.next();
   }
+
+  const { supabase, response } = createSupabaseMiddlewareClient(request);
 
   if (!supabase) {
     const redirectUrl = new URL("/login", request.url);
@@ -35,8 +35,14 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
+/** Only run session refresh on protected app routes — not /login, /api, marketing pages, etc. */
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/dashboard",
+    "/dashboard/:path*",
+    "/scans",
+    "/scans/:path*",
+    "/collection",
+    "/collection/:path*",
   ],
 };
