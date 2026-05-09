@@ -3,6 +3,20 @@ import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware";
 
 const protectedPrefixes = ["/dashboard", "/scans", "/collection"];
 
+/** Next.js inlines NEXT_PUBLIC_* at build time — OK for temporary QA bypass only. */
+function isDemoModeEnv(): boolean {
+  return process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+}
+
+/** When demo mode is on, these paths skip the session gate (sample UI only). */
+function isDemoPublicAppPath(pathname: string): boolean {
+  if (pathname === "/dashboard" || pathname.startsWith("/dashboard/")) return true;
+  if (pathname === "/collection" || pathname.startsWith("/collection/")) return true;
+  if (pathname === "/scans/new") return true;
+  const m = pathname.match(/^\/scans\/([^/]+)/);
+  return m?.[1] === "demo";
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -11,6 +25,10 @@ export async function middleware(request: NextRequest) {
   );
 
   if (!isProtected) {
+    return NextResponse.next();
+  }
+
+  if (isDemoModeEnv() && isDemoPublicAppPath(pathname)) {
     return NextResponse.next();
   }
 

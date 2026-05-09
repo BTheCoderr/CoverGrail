@@ -1,9 +1,74 @@
 import { SlabCard } from "@/components/slab-card";
+import { DEMO_COLLECTION_ROWS } from "@/lib/demo/mockData";
+import { isDemoMode } from "@/lib/demo/mode";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function CollectionPage() {
+  if (isDemoMode()) {
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-400/90">
+              Collection
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-zinc-50">
+              Scan history
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm text-zinc-400">
+              Every submission lives here with status, timestamps, and links back to your predicted
+              grade ranges.
+            </p>
+          </div>
+          <Link
+            href="/scans/new"
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-amber-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-amber-300"
+          >
+            New scan
+          </Link>
+        </div>
+
+        <SlabCard label="Saved scans (sample)">
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead className="text-xs uppercase tracking-widest text-zinc-500">
+                <tr>
+                  <th className="pb-3 pr-6 font-medium">Title</th>
+                  <th className="pb-3 pr-6 font-medium">Predicted grade</th>
+                  <th className="pb-3 pr-6 font-medium">Confidence</th>
+                  <th className="pb-3 pr-6 font-medium">Saved</th>
+                  <th className="pb-3 pl-6 font-medium text-right"> </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-800/80">
+                {DEMO_COLLECTION_ROWS.map((row) => (
+                  <tr key={row.title} className="text-zinc-200">
+                    <td className="py-4 pr-6 font-medium">{row.title}</td>
+                    <td className="py-4 pr-6 text-zinc-300">
+                      {row.gradeLow.toFixed(1)} – {row.gradeHigh.toFixed(1)}
+                    </td>
+                    <td className="py-4 pr-6 text-zinc-400">{row.confidenceLabel}</td>
+                    <td className="py-4 pr-6 text-zinc-400">{row.savedAtLabel}</td>
+                    <td className="py-4 pl-6 text-right">
+                      <Link
+                        href={`/scans/${row.id}`}
+                        className="font-semibold text-amber-400 hover:underline"
+                      >
+                        View result
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </SlabCard>
+      </div>
+    );
+  }
+
   const supabase = await createClient();
   const {
     data: { user },

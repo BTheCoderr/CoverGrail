@@ -1,6 +1,7 @@
 "use server";
 
 import { userHasScanQuota } from "@/lib/billing/scanQuota";
+import { isDemoMode } from "@/lib/demo/mode";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -48,22 +49,6 @@ async function assertUnderQuota(userId: string, email: string | undefined) {
 }
 
 export async function createScan(formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const userId = user.id;
-
-  const quota = await assertUnderQuota(userId, user.email ?? undefined);
-  if (!quota.ok && quota.reason === "quota") {
-    redirect("/pricing?reason=quota");
-  }
-
   const title = String(formData.get("title") ?? "").trim();
   const issue_number =
     String(formData.get("issue_number") ?? "").trim() || null;
@@ -107,6 +92,26 @@ export async function createScan(formData: FormData) {
     if (f.size > MAX_BYTES) {
       redirect("/scans/new?error=file_too_large");
     }
+  }
+
+  if (isDemoMode()) {
+    redirect("/scans/demo");
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const userId = user.id;
+
+  const quota = await assertUnderQuota(userId, user.email ?? undefined);
+  if (!quota.ok && quota.reason === "quota") {
+    redirect("/pricing?reason=quota");
   }
 
   const { data: scanRow, error: scanErr } = await supabase

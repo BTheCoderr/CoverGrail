@@ -34,6 +34,8 @@ type ScanResultRow = {
   predicted_grade_low: number;
   predicted_grade_high: number;
   confidence: ComicGradeResult["confidence"];
+  /** Demo / display override — shows as a percentage instead of low/med/high label. */
+  confidencePercent?: number | null;
   recommendation: ComicGradeResult["recommendation"];
   photo_quality_score: number;
   detected_defects: DetectedDefectItem[];
@@ -63,12 +65,23 @@ function confidenceLabel(c: ComicGradeResult["confidence"]) {
   return c.charAt(0).toUpperCase() + c.slice(1);
 }
 
+function confidenceDisplayText(result: ScanResultRow | null) {
+  if (!result) return "";
+  if (typeof result.confidencePercent === "number" && Number.isFinite(result.confidencePercent)) {
+    return `${Math.round(result.confidencePercent)}%`;
+  }
+  return confidenceLabel(result.confidence);
+}
+
 export function ScanDetailClient({
   scanId,
   initial,
+  demo = false,
 }: {
   scanId: string;
   initial: ScanDetailPayload;
+  /** Sample-only UI: no grading API, no save, no confirmed-grade POST. */
+  demo?: boolean;
 }) {
   const [data, setData] = useState(initial);
   const [saveBusy, setSaveBusy] = useState(false);
@@ -85,6 +98,7 @@ export function ScanDetailClient({
   }, [scanId]);
 
   useEffect(() => {
+    if (demo) return;
     const waiting =
       (data.scan.status === "pending" || data.scan.status === "grading") &&
       !data.result;
@@ -97,16 +111,17 @@ export function ScanDetailClient({
     }).finally(() => {
       void refresh();
     });
-  }, [data.scan.status, data.result, refresh, scanId]);
+  }, [demo, data.scan.status, data.result, refresh, scanId]);
 
   useEffect(() => {
+    if (demo) return;
     const polling =
       (data.scan.status === "pending" || data.scan.status === "grading") &&
       !data.result;
     if (!polling) return;
     const timer = setInterval(() => void refresh(), 2500);
     return () => clearInterval(timer);
-  }, [data.scan.status, data.result, refresh]);
+  }, [demo, data.scan.status, data.result, refresh]);
 
   const defects = useMemo(() => {
     const raw = data.result?.detected_defects;
@@ -115,6 +130,7 @@ export function ScanDetailClient({
   }, [data.result]);
 
   async function handleSave() {
+    if (demo) return;
     setSaveBusy(true);
     try {
       await fetch(`/api/scans/${scanId}/save`, { method: "POST" });
@@ -204,10 +220,15 @@ export function ScanDetailClient({
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-3">
               <span className="rounded-full border border-zinc-700 bg-zinc-950/60 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-zinc-300">
-                Confidence: {confidenceLabel(data.result.confidence)}
+                Confidence: {confidenceDisplayText(data.result)}
               </span>
               <RecommendationBadge value={data.result.recommendation} />
             </div>
+            {demo ? (
+              <p className="mt-4 text-sm text-zinc-400">
+                Recommendation: Press first, then consider submission
+              </p>
+            ) : null}
           </SlabCard>
 
           <SlabCard label="Photo quality">
@@ -251,6 +272,11 @@ export function ScanDetailClient({
             <p className="text-sm leading-relaxed text-zinc-300">
               {data.result.reasoning_summary}
             </p>
+            {demo ? (
+              <p className="mt-4 rounded-xl border border-emerald-500/25 bg-emerald-950/25 px-4 py-3 text-sm font-medium text-emerald-100/95">
+                Decision: likely worth submitting if pressing improves presentation
+              </p>
+            ) : null}
           </SlabCard>
 
           <SlabCard label="Next steps" className="lg:col-span-3">
@@ -268,7 +294,12 @@ export function ScanDetailClient({
           <button
             type="button"
             onClick={() => void handleSave()}
-            disabled={saveBusy}
+            disabled={saveBusy || demo}
+            title={
+              demo
+                ? "Demo mode: sign in and run a real scan to save to your collection."
+                : undefined
+            }
             className="inline-flex h-11 items-center justify-center rounded-xl bg-amber-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-amber-300 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
           >
             {saveBusy ? "Saving…" : "Save to collection"}
@@ -276,7 +307,13 @@ export function ScanDetailClient({
           <button
             type="button"
             onClick={() => setGradeOpen(true)}
-            className="inline-flex h-11 items-center justify-center rounded-xl border border-zinc-700 px-6 text-sm font-semibold text-zinc-100 hover:border-amber-500/40 hover:text-amber-400"
+            disabled={demo}
+            title={
+              demo
+                ? "Demo mode: sign in to record confirmed grades."
+                : undefined
+            }
+            className="inline-flex h-11 items-center justify-center rounded-xl border border-zinc-700 px-6 text-sm font-semibold text-zinc-100 hover:border-amber-500/40 hover:text-amber-400 disabled:cursor-not-allowed disabled:opacity-40"
           >
             Update with confirmed CGC/CBCS grade
           </button>

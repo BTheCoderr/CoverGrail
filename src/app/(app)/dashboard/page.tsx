@@ -1,5 +1,7 @@
-import { SlabCard } from "@/components/slab-card";
 import { subscriptionIsActiveForScans } from "@/lib/billing/scanQuota";
+import { SlabCard } from "@/components/slab-card";
+import { DEMO_DASHBOARD_RECENT_SCANS } from "@/lib/demo/mockData";
+import { isDemoMode } from "@/lib/demo/mode";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -20,6 +22,87 @@ export default async function DashboardPage({
   searchParams: Promise<{ checkout?: string }>;
 }) {
   const params = await searchParams;
+
+  if (isDemoMode()) {
+    return (
+      <div className="space-y-10">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-400/90">
+            Dashboard
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-zinc-50">
+            Your grading runway
+          </h1>
+          <p className="mt-3 max-w-2xl text-sm text-zinc-400">
+            Before you slab it, scan it—likely grade range, defect cues, and submit / press first /
+            sell raw guidance before you pay grading fees.
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <SlabCard label="Current plan">
+            <p className="text-sm text-zinc-400">Tier</p>
+            <p className="mt-2 text-2xl font-semibold text-zinc-50">Free Starter</p>
+          </SlabCard>
+          <SlabCard label="Free scans remaining">
+            <p className="text-sm text-zinc-400">Complimentary quota</p>
+            <p className="mt-2 text-2xl font-semibold text-zinc-50">3</p>
+          </SlabCard>
+          <SlabCard label="Paid scan credits">
+            <p className="text-sm text-zinc-400">One-time purchases</p>
+            <p className="mt-2 text-2xl font-semibold text-zinc-50">0</p>
+          </SlabCard>
+          <SlabCard label="Monthly usage">
+            <p className="text-sm text-zinc-400">Subscription scans this period</p>
+            <p className="mt-2 text-2xl font-semibold text-zinc-50">0 / 0</p>
+          </SlabCard>
+        </div>
+
+        <SlabCard label="Quick action">
+          <div className="flex flex-wrap items-center gap-4">
+            <Link
+              href="/scans/new"
+              className="inline-flex h-10 items-center justify-center rounded-xl bg-amber-400 px-4 text-sm font-semibold text-zinc-950 hover:bg-amber-300"
+            >
+              New scan
+            </Link>
+            <Link
+              href="/collection"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-zinc-700 px-4 text-sm font-semibold text-zinc-100 hover:border-amber-500/40 hover:text-amber-400"
+            >
+              Collection
+            </Link>
+            <Link
+              href="/pricing"
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-zinc-700 px-4 text-sm font-semibold text-zinc-100 hover:border-amber-500/40 hover:text-amber-400"
+            >
+              Pricing
+            </Link>
+          </div>
+        </SlabCard>
+
+        <SlabCard label="Recent scans">
+          <ul className="divide-y divide-zinc-800/80">
+            {DEMO_DASHBOARD_RECENT_SCANS.map((row, idx) => (
+              <li key={`${row.id}-${idx}`} className="flex flex-wrap items-center gap-3 py-4">
+                <div className="flex-1">
+                  <p className="font-medium text-zinc-100">{row.title}</p>
+                  <p className="text-xs uppercase tracking-widest text-zinc-500">{row.status}</p>
+                </div>
+                <Link
+                  href={`/scans/${row.id}`}
+                  className="text-sm font-semibold text-amber-400 hover:underline"
+                >
+                  Open
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </SlabCard>
+      </div>
+    );
+  }
+
   const supabase = await createClient();
   const {
     data: { user },
