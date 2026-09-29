@@ -1,3 +1,4 @@
+import { getSupabaseServiceRoleKey } from "@/lib/supabase/env";
 import Stripe from "stripe";
 
 let stripeSingleton: Stripe | null = null;
@@ -20,6 +21,7 @@ export function isStripeConfigured(): boolean {
 export function isStripeCheckoutReady(): boolean {
   return Boolean(
     process.env.STRIPE_SECRET_KEY &&
+      getSupabaseServiceRoleKey() &&
       process.env.NEXT_PUBLIC_SITE_URL &&
       process.env.STRIPE_PRICE_SINGLE_SCAN &&
       process.env.STRIPE_PRICE_COLLECTOR_MONTHLY &&
