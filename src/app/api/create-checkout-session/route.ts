@@ -1,3 +1,4 @@
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
@@ -100,7 +101,19 @@ export async function POST(request: Request) {
         metadata: { user_id: user.id },
       });
       customerId = customer.id;
-      const { error: custErr } = await supabase
+
+      let admin;
+      try {
+        admin = createAdminClient();
+      } catch (adminError) {
+        console.error(
+          "[stripe-checkout] Admin client unavailable:",
+          adminError instanceof Error ? adminError.message : "admin_client_failed",
+        );
+        return NextResponse.json({ error: "Billing backend is not configured" }, { status: 503 });
+      }
+
+      const { error: custErr } = await admin
         .from("profiles")
         .update({ stripe_customer_id: customerId })
         .eq("id", user.id);

@@ -35,44 +35,24 @@ export function userHasScanQuota(p: ScanQuotaProfile): boolean {
 }
 
 /**
- * After a successful scan_results insert: prefer free tier, then paid credits, then subscription usage.
+ * Atomically consumes quota for one completed scan.
+ *
+ * The database RPC is idempotent per scan and owns the billing-field mutation,
+ * so browser clients never need UPDATE privileges on plan/credit columns.
  */
 export async function consumeScanAfterGrade(
   supabase: SupabaseClient,
-  userId: string,
+  scanId: string,
 ): Promise<void> {
-  const { data: p } = await supabase
-    .from("profiles")
-    .select(
-      "free_scans_remaining, paid_scan_credits, subscription_status, monthly_scan_limit, scans_used_this_period",
-    )
-    .eq("id", userId)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc("consume_scan_quota", {
+    p_scan_id: scanId,
+  });
 
-  if (!p) return;
-
-  const free = p.free_scans_remaining ?? 0;
-  if (free > 0) {
-    await supabase
-      .from("profiles")
-      .update({ free_scans_remaining: free - 1 })
-      .eq("id", userId);
-    return;
+  if (error) {
+    throw new Error(`Could not record scan quota: ${error.message}`);
   }
 
-  const credits = p.paid_scan_credits ?? 0;
-  if (credits > 0) {
-    await supabase.from("profiles").update({ paid_scan_credits: credits - 1 }).eq("id", userId);
-    return;
-  }
-
-  if (
-    subscriptionAllowsMonthlyQuotaConsumption(p.subscription_status as string | null) &&
-    (p.monthly_scan_limit ?? 0) > 0
-  ) {
-    await supabase
-      .from("profiles")
-      .update({ scans_used_this_period: (p.scans_used_this_period ?? 0) + 1 })
-      .eq("id", userId);
+  if (data !== true) {
+    throw new Error("Could not record scan quota");
   }
 }

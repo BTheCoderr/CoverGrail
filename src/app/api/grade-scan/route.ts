@@ -54,6 +54,20 @@ export async function POST(request: Request) {
       .from("comic_scans")
       .update({ status: "complete", error_message: null })
       .eq("id", scanId);
+
+    try {
+      await consumeScanAfterGrade(supabase, scanId);
+    } catch (error) {
+      console.error(
+        "[grade-scan] Cached result exists but quota reconciliation failed:",
+        error instanceof Error ? error.message : "quota_reconciliation_failed",
+      );
+      return NextResponse.json(
+        { error: "Could not finalize scan quota" },
+        { status: 500 },
+      );
+    }
+
     return NextResponse.json({ ok: true, cached: true });
   }
 
@@ -162,7 +176,7 @@ export async function POST(request: Request) {
       .update({ status: "complete", error_message: null })
       .eq("id", scanId);
 
-    await consumeScanAfterGrade(supabase, user.id);
+    await consumeScanAfterGrade(supabase, scanId);
 
     return NextResponse.json({ ok: true });
   } catch (e) {
