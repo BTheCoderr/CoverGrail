@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getSupabaseServiceRoleKey } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { getStripe } from "@/lib/stripe";
 import { NextResponse } from "next/server";
@@ -57,6 +58,11 @@ export async function POST(request: Request) {
       { error: `Stripe price not configured (${missing})` },
       { status: 503 },
     );
+  }
+
+  if (!getSupabaseServiceRoleKey()) {
+    console.error("[stripe-checkout] Supabase admin key is not configured");
+    return NextResponse.json({ error: "Billing backend is not configured" }, { status: 503 });
   }
 
   let stripe: ReturnType<typeof getStripe>;
