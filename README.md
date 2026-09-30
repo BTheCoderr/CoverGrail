@@ -1,71 +1,296 @@
 # CoverGrail
 
-<!-- repo-intro:start -->
-**Project snapshot:** CoverGrail is a comic-collecting MVP for educational pre-submission grade estimates, helping collectors inspect a book before deciding whether to pay for third-party grading.
+**AI-assisted pre-grading decision support for comic collectors — before you slab it, scan it.**
 
-**What it demonstrates:** Next.js · Supabase Auth/Storage · vision-AI pipeline · structured JSON · Stripe-ready SaaS UX.
-<!-- repo-intro:end -->
+CoverGrail helps collectors review comic-book photos before paying for professional grading. Users upload a structured photo set, receive a predicted grade range with visible defect cues, and save the result to a private collection for later comparison with an official grade.
 
-Premium Next.js MVP for comic collectors who want **pre-submission grade estimates** before paying third-party grading fees. Positioning: **before you slab it, scan it.** CoverGrail is **not affiliated with CGC or CBCS**; predictions are **educational pre-submission estimates**.
+> CoverGrail is not affiliated with CGC, CBCS, or any grading company. Results are educational pre-submission estimates, not official grades, certifications, or appraisals.
 
-## Stack
+**Live app:** https://covergrail.netlify.app
 
-- Next.js App Router (TypeScript)
-- Tailwind CSS v4
-- Supabase Auth + Postgres + Storage
-- OpenAI vision → structured JSON (`lib/ai`) server-side only (or `MOCK_GRADE=true` for demos)
-- Stripe-ready pricing UI + stub checkout route
+## Product status
 
-## Local setup
+CoverGrail is running against its dedicated production Supabase backend.
 
-1. Install dependencies:
+- Real Supabase authentication and user-scoped persistence
+- Private comic-image storage
+- Row Level Security across user data
+- Self-service account deletion
+- Feedback and privacy-safe product telemetry
+- Production grading currently runs in **mock mode** while the complete user flow is validated
+- Live AI grading can be enabled independently after beta validation
+- Stripe infrastructure is present but paid actions remain server-gated
 
-```bash
-npm install
+Current runtime flags:
+
+```text
+NEXT_PUBLIC_DEMO_MODE=false
+MOCK_GRADE=true
 ```
 
-2. Create a Supabase project and run [`supabase/migrations/001_initial_schema.sql`](supabase/migrations/001_initial_schema.sql) in the SQL editor (or Supabase CLI).
+## What it does
 
-3. In Supabase Authentication → URL configuration, add redirect URLs:
+### Pre-grade a comic
 
-- `http://localhost:3000/auth/callback`
-- Your production `/auth/callback`
+A collector uploads:
 
-4. Copy environment variables:
+- front cover
+- back cover
+- spine
+- up to four optional corner/detail photos
+
+CoverGrail validates the images server-side and creates a private scan workspace.
+
+### Review a structured grading estimate
+
+The grading pipeline is designed to return:
+
+- predicted grade range
+- visible defect observations
+- grading confidence/context
+- pre-submission decision support
+
+Duplicate grading requests are locked so a refresh or double-click cannot trigger multiple AI runs for the same scan.
+
+### Build a private collection
+
+Users can save scans and later record confirmed grades, making CoverGrail useful as both a pre-submission tool and a personal grading-history workspace.
+
+## Architecture
+
+```text
+Browser
+  |
+  v
+Next.js 16 / React 19
+  |
+  +--> Supabase Auth
+  |
+  +--> Supabase Postgres
+  |      - profiles
+  |      - comic_scans
+  |      - scan_images
+  |      - scan_results
+  |      - confirmed_grades
+  |      - beta_feedback
+  |      - product_events
+  |
+  +--> Supabase Storage
+  |      - private scan-images bucket
+  |
+  +--> Supabase Edge Functions
+  |      - delete-account
+  |
+  +--> AI grading adapter
+  |      - deterministic mock mode for beta
+  |      - OpenAI-compatible live vision path
+  |
+  +--> Stripe-ready billing layer
+```
+
+## Security and privacy
+
+CoverGrail treats uploaded comic photos and collection data as private user content.
+
+Implemented safeguards include:
+
+- Row Level Security on all exposed user-data tables
+- owner-scoped database policies
+- private Supabase Storage bucket
+- owner-scoped storage policies
+- server-only Supabase secret key
+- publishable key only in browser-facing configuration
+- atomic/idempotent scan-quota consumption
+- browser users cannot modify billing, plan, or scan-credit fields
+- grading concurrency lock
+- server-side image signature validation
+- JWT-protected account-deletion Edge Function
+- full account cleanup including stored comic images
+- privacy-safe telemetry that excludes comic titles, notes, photos, and grading reasoning
+- dependency audit gates in CI
+- no secrets committed to the repository
+
+The Supabase Security Advisor currently reports no security findings for the production project.
+
+## Upload safeguards
+
+Accepted image formats:
+
+- JPEG
+- PNG
+- WebP
+
+Validation is performed from the file signature, not only the filename or browser-provided MIME type.
+
+Limits:
+
+- 12 MB per image
+- up to 4 optional corner/detail images
+- 60 MB combined upload limit
+
+## Reliability
+
+The repository includes automated checks for:
+
+- regression tests
+- ESLint
+- production Next.js build
+- production dependency audit
+- critical vulnerability gate
+- Deno type checking for Supabase Edge Functions
+
+Regression coverage currently includes core quota rules, scan-image ordering, and image-signature validation.
+
+## Tech stack
+
+- **Frontend:** Next.js 16, React 19, TypeScript
+- **Styling:** Tailwind CSS v4
+- **Authentication:** Supabase Auth
+- **Database:** Supabase Postgres
+- **Storage:** Supabase Storage
+- **Serverless:** Supabase Edge Functions
+- **AI:** OpenAI-compatible vision adapter / deterministic beta mock
+- **Payments:** Stripe-ready integration
+- **Hosting:** Netlify
+- **CI:** GitHub Actions
+
+## Routes
+
+Public:
+
+- `/` — landing page
+- `/login` — magic-link authentication
+- `/grading-guide`
+- `/pricing`
+- `/disclaimer`
+- `/privacy`
+- `/terms`
+
+Authenticated:
+
+- `/dashboard`
+- `/scans/new`
+- `/scans/[id]`
+- `/collection`
+- `/feedback`
+- `/account`
+
+Operational:
+
+- `/api/health/auth-config` — safe Supabase connectivity diagnostics
+
+## Local development
+
+Install dependencies:
+
+```bash
+npm ci
+```
+
+Create local environment configuration:
 
 ```bash
 cp .env.example .env.local
 ```
 
-Fill `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL`, and `OPENAI_API_KEY` (unless using mock grading).
+At minimum configure:
 
-5. Run the dev server:
+```text
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+MOCK_GRADE=true
+NEXT_PUBLIC_DEMO_MODE=false
+```
+
+For trusted server operations, configure one server-only Supabase admin credential:
+
+```text
+SUPABASE_SECRET_KEY=
+```
+
+Never prefix the secret key with `NEXT_PUBLIC_`.
+
+Then run:
 
 ```bash
 npm run dev
 ```
 
-Visit `http://localhost:3000`.
+Open http://localhost:3000.
 
-## Production mode
+## Supabase setup
 
-- Production uses the dedicated CoverGrail Supabase project in BTheWorks.
-- `NEXT_PUBLIC_DEMO_MODE=false`: real Supabase auth/data paths are enabled.
-- `MOCK_GRADE=true`: grading stays deterministic/mock until live AI grading is intentionally enabled.
-- Paid checkout remains server-gated by the CoverGrail Supabase secret key.
+Database changes are tracked under:
 
-## Product flows
+```text
+supabase/migrations/
+```
 
-- Landing: headline/subhead, problem → how it works → example result → pricing preview → dealer CTA → disclaimer.
-- Magic-link auth at `/login`.
-- App: `/dashboard`, `/scans/new`, `/scans/[id]`, `/collection`, `/pricing`.
-- Uploads go to private bucket `scan-images` at `{user_id}/{scan_id}/…`.
-- `POST /api/grade-scan` with `{ "scanId": "…" }` signs image URLs, runs OpenAI (or mock), writes `scan_results`, decrements `profiles.free_scans_remaining` on **free** plan after success.
+The current production schema includes migrations for:
 
-## Stripe
+1. core scan and grading tables
+2. billing fields
+3. billing indexes
+4. RLS/storage/quota security hardening
+5. scan-image ownership indexing
+6. beta feedback and privacy-safe telemetry
 
-Enable subscribe buttons when both `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are set. Implement Checkout Session creation in [`src/app/api/create-checkout-session/route.ts`](src/app/api/create-checkout-session/route.ts) and verify webhooks in [`src/app/api/webhooks/stripe/route.ts`](src/app/api/webhooks/stripe/route.ts).
+The account-deletion Edge Function lives under:
+
+```text
+supabase/functions/delete-account/
+```
+
+For magic-link authentication, Supabase Auth URL Configuration should include:
+
+```text
+Site URL:
+https://covergrail.netlify.app
+
+Redirect URL:
+https://covergrail.netlify.app/auth/callback
+```
+
+For local development also allow:
+
+```text
+http://localhost:3000/auth/callback
+```
+
+## Testing
+
+Run regression tests:
+
+```bash
+npm test
+```
+
+Run lint:
+
+```bash
+npm run lint
+```
+
+Run a production build:
+
+```bash
+npm run build
+```
+
+GitHub Actions runs these checks automatically and also validates the Supabase Edge Function with Deno.
+
+## Production rollout
+
+The safer rollout sequence is intentionally split:
+
+1. real authentication + production Supabase
+2. mock grading through the complete real user/data flow
+3. live AI grading
+4. paid billing after end-to-end validation
+
+This keeps account, storage, RLS, deletion, and collection behavior testable without spending model credits during infrastructure validation.
 
 ## Disclaimer
 
-Language emphasizes **likely grade range**, **pre-submission**, and non-affiliation with CGC/CBCS everywhere.
+CoverGrail provides educational pre-submission estimates based on submitted information and visible image evidence. Professional grading outcomes may differ because of image quality, defects not visible in photos, restoration, page quality, grader judgment, and other factors.
