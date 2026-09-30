@@ -84,8 +84,8 @@ export default function GradingGuidePage() {
       </section>
 
       <div className="mx-auto mt-14 max-w-2xl space-y-4 rounded-2xl border border-zinc-800/80 bg-zinc-950/60 px-6 py-8">
-        <Disclaimer className="text-center text-sm text-zinc-500" />
-        <ul className="space-y-2 text-center text-xs leading-relaxed text-zinc-600">
+        <Disclaimer className="text-center text-sm text-zinc-400" />
+        <ul className="space-y-2 text-center text-xs leading-relaxed text-zinc-400">
           <li>CoverGrail is not affiliated with CGC or CBCS.</li>
           <li>Predictions are educational pre-submission estimates.</li>
           <li>CoverGrail does not guarantee official grading outcomes.</li>

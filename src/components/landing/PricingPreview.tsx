@@ -36,12 +36,12 @@ export function PricingPreview() {
             key={t.name}
             className="rounded-2xl border border-zinc-800/80 bg-zinc-900/35 p-6"
           >
-            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
               {t.name}
             </p>
             <p className="mt-3 text-3xl font-semibold text-zinc-50">{t.price}</p>
             <p className="text-sm text-zinc-400">{t.detail}</p>
-            <ul className="mt-4 space-y-2 text-sm text-zinc-500">
+            <ul className="mt-4 space-y-2 text-sm text-zinc-400">
               {t.bullets.map((b) => (
                 <li key={b}>• {b}</li>
               ))}

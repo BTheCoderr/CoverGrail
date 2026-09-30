@@ -28,7 +28,7 @@ export function HowItWorks() {
             key={s.title}
             className="rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-6"
           >
-            <span className="text-xs font-semibold text-zinc-500">
+            <span className="text-xs font-semibold text-zinc-400">
               Step {i + 1}
             </span>
             <h3 className="mt-2 text-base font-semibold text-zinc-50">{s.title}</h3>

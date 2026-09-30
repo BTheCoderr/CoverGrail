@@ -76,7 +76,7 @@ export default async function NewScanPage({
               required
             />
             <label className="block space-y-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
                 Optional corner close-ups
               </span>
               <input
@@ -86,7 +86,7 @@ export default async function NewScanPage({
                 multiple
                 className="block w-full cursor-pointer rounded-xl border border-dashed border-zinc-700 bg-zinc-950/60 px-4 py-6 text-sm text-zinc-300 file:mr-4 file:rounded-lg file:border-0 file:bg-amber-400 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-950"
               />
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-zinc-400">
                 Select up to four JPEG, PNG, or WebP files.
               </span>
             </label>
@@ -111,7 +111,7 @@ export default async function NewScanPage({
               className="sm:col-span-2"
             />
             <label className="block space-y-2 sm:col-span-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
                 Notes (optional)
               </span>
               <textarea
@@ -125,7 +125,7 @@ export default async function NewScanPage({
         </SlabCard>
 
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-zinc-400">
             CoverGrail is not affiliated with CGC or CBCS and does not guarantee
             official grading outcomes. Predictions are educational pre-submission
             estimates.
@@ -141,7 +141,7 @@ export default async function NewScanPage({
 
       <Link
         href="/dashboard"
-        className="inline-flex text-sm text-zinc-500 hover:text-amber-400"
+        className="inline-flex text-sm text-zinc-400 hover:text-amber-400"
       >
         ← Back to dashboard
       </Link>
@@ -162,7 +162,7 @@ function PhotoField({
 }) {
   return (
     <label className="block space-y-2">
-      <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+      <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
         {label}
         {required ? (
           <span className="text-amber-400"> *</span>
@@ -175,7 +175,7 @@ function PhotoField({
         required={required}
         className="block w-full cursor-pointer rounded-xl border border-dashed border-zinc-700 bg-zinc-950/60 px-4 py-6 text-sm text-zinc-300 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-800 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-50"
       />
-      <span className="text-xs text-zinc-500">{description}</span>
+      <span className="text-xs text-zinc-400">{description}</span>
     </label>
   );
 }
@@ -195,7 +195,7 @@ function Field({
 }) {
   return (
     <label className={`block space-y-2 ${className}`.trim()}>
-      <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+      <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
         {label}
       </span>
       <input

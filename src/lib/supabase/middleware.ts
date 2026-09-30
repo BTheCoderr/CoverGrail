@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import type { Database } from "@/lib/supabase/database.types";
 import { NextResponse, type NextRequest } from "next/server";
 import { getSupabasePublicApiKey, getSupabaseUrl } from "@/lib/supabase/env";
 
@@ -17,7 +18,7 @@ export function createSupabaseMiddlewareClient(request: NextRequest) {
     };
   }
 
-  const supabase = createServerClient(url, anon, {
+  const supabase = createServerClient<Database>(url, anon, {
     cookies: {
       getAll() {
         return request.cookies.getAll();

@@ -32,7 +32,7 @@ export function LoginEmailForm({ rateLimitCooldown, linkJustSent }: Props) {
 
   return (
     <form action={loginAction} className="mt-8 space-y-4">
-      <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500">
+      <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">
         Email
         <input
           required

@@ -168,7 +168,7 @@ export function ScanDetailClient({
           </p>
           {data.scan.notes ? (
             <p className="mt-3 rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-3 text-sm text-zinc-400">
-              <span className="font-semibold text-zinc-500">Your notes: </span>
+              <span className="font-semibold text-zinc-400">Your notes: </span>
               {data.scan.notes}
             </p>
           ) : null}
@@ -211,7 +211,7 @@ export function ScanDetailClient({
       {data.result ? (
         <div className="grid gap-6 lg:grid-cols-3">
           <SlabCard label="Predicted grade range" className="lg:col-span-2">
-            <p className="text-xs uppercase tracking-widest text-zinc-500">
+            <p className="text-xs uppercase tracking-widest text-zinc-400">
               Likely grade range (pre-submission)
             </p>
             <p className="mt-3 text-4xl font-semibold text-zinc-50 sm:text-5xl">
@@ -234,7 +234,7 @@ export function ScanDetailClient({
           <SlabCard label="Photo quality">
             <p className="text-4xl font-semibold text-zinc-50">
               {data.result.photo_quality_score}
-              <span className="text-lg font-normal text-zinc-500">/10</span>
+              <span className="text-lg font-normal text-zinc-400">/10</span>
             </p>
             <p className="mt-3 text-sm text-zinc-400">
               Based on sharpness, lighting, and coverage of key views.
@@ -251,7 +251,7 @@ export function ScanDetailClient({
                 ? `$${Number(data.result.estimated_grading_cost).toFixed(0)}`
                 : "—"}
             </p>
-            <p className="mt-2 text-xs text-zinc-500">
+            <p className="mt-2 text-xs text-zinc-400">
               Illustrative third-party submission fees—not a quote from any
               grading company.
             </p>
@@ -263,7 +263,7 @@ export function ScanDetailClient({
                 ? `$${Number(data.result.estimated_upside).toFixed(0)}`
                 : "—"}
             </p>
-            <p className="mt-2 text-xs text-zinc-500">
+            <p className="mt-2 text-xs text-zinc-400">
               Illustrative upside vs raw sale after fees—educational only.
             </p>
           </SlabCard>
@@ -323,7 +323,7 @@ export function ScanDetailClient({
             </span>
           ) : null}
           {data.scan.user_saved_at && !savedFlash ? (
-            <span className="flex items-center text-sm text-zinc-500">
+            <span className="flex items-center text-sm text-zinc-400">
               Last saved{" "}
               {new Date(data.scan.user_saved_at).toLocaleString(undefined, {
                 dateStyle: "medium",
@@ -347,7 +347,7 @@ export function ScanDetailClient({
           </p>
           {(data.confirmed_grade.submitted_at ||
             data.confirmed_grade.returned_at) && (
-            <p className="mt-2 text-xs text-zinc-500">
+            <p className="mt-2 text-xs text-zinc-400">
               {data.confirmed_grade.submitted_at
                 ? `Submitted ${data.confirmed_grade.submitted_at}`
                 : null}
@@ -365,13 +365,13 @@ export function ScanDetailClient({
               {data.confirmed_grade.notes}
             </p>
           ) : null}
-          <p className="mt-2 text-xs text-zinc-500">
+          <p className="mt-2 text-xs text-zinc-400">
             For your personal tracking only—not verified by CoverGrail.
           </p>
         </SlabCard>
       ) : null}
 
-      <Disclaimer className="max-w-3xl text-sm text-zinc-500" />
+      <Disclaimer className="max-w-3xl text-sm text-zinc-400" />
 
       {gradeOpen ? (
         <ConfirmedGradeDialog
@@ -429,7 +429,7 @@ function ConfirmedGradeDialog({
             <h2 className="text-lg font-semibold text-zinc-50">
               Confirmed slab grade
             </h2>
-            <p className="mt-2 text-xs text-zinc-500">
+            <p className="mt-2 text-xs text-zinc-400">
               Record outcomes after your chosen grading company returns the book.
             </p>
           </div>
@@ -458,7 +458,7 @@ function ConfirmedGradeDialog({
             });
           }}
         >
-          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">
             Grading company
             <input
               value={company}
@@ -467,7 +467,7 @@ function ConfirmedGradeDialog({
             />
           </label>
 
-          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">
             Grade (0–10)
             <input
               value={grade}
@@ -480,7 +480,7 @@ function ConfirmedGradeDialog({
             />
           </label>
 
-          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">
             Certification # (optional)
             <input
               value={cert}
@@ -489,7 +489,7 @@ function ConfirmedGradeDialog({
             />
           </label>
 
-          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">
             Submitted (optional)
             <input
               value={submitted}
@@ -499,7 +499,7 @@ function ConfirmedGradeDialog({
             />
           </label>
 
-          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">
             Returned (optional)
             <input
               value={returned}
@@ -509,7 +509,7 @@ function ConfirmedGradeDialog({
             />
           </label>
 
-          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-500">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400">
             Notes (optional)
             <textarea
               value={notes}

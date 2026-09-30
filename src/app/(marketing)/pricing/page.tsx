@@ -165,7 +165,7 @@ export default async function PricingPage({
       </div>
 
       <div className="mx-auto mt-12 max-w-2xl">
-        <Disclaimer className="text-center text-sm text-zinc-500" />
+        <Disclaimer className="text-center text-sm text-zinc-400" />
       </div>
     </main>
   );

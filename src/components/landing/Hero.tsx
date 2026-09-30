@@ -17,7 +17,7 @@ export function Hero() {
         range, flags visible defects, and tells you whether to submit, press
         first, or sell raw.
       </p>
-      <p className="mx-auto mt-4 max-w-xl text-sm text-zinc-500">
+      <p className="mx-auto mt-4 max-w-xl text-sm text-zinc-400">
         CoverGrail gives collectors a pre-submission grade range, defect report,
         and submit-or-sell recommendation before they spend money on professional
         grading.

@@ -87,7 +87,7 @@ export default async function DashboardPage({
               <li key={`${row.id}-${idx}`} className="flex flex-wrap items-center gap-3 py-4">
                 <div className="flex-1">
                   <p className="font-medium text-zinc-100">{row.title}</p>
-                  <p className="text-xs uppercase tracking-widest text-zinc-500">{row.status}</p>
+                  <p className="text-xs uppercase tracking-widest text-zinc-400">{row.status}</p>
                 </div>
                 <Link
                   href={`/scans/${row.id}`}
@@ -172,7 +172,7 @@ export default async function DashboardPage({
             {planDisplayName(profile?.plan)}
           </p>
           {profile?.subscription_status ? (
-            <p className="mt-2 text-xs uppercase tracking-wider text-zinc-500">
+            <p className="mt-2 text-xs uppercase tracking-wider text-zinc-400">
               Billing: {profile.subscription_status}
             </p>
           ) : null}
@@ -193,7 +193,7 @@ export default async function DashboardPage({
           <p className="text-sm text-zinc-400">Subscription scans this period</p>
           <p className="mt-2 text-2xl font-semibold text-zinc-50">{monthlyLabel}</p>
           {profile?.billing_period_end && subscriptionActive && monthlyLimit > 0 ? (
-            <p className="mt-2 text-xs text-zinc-500">
+            <p className="mt-2 text-xs text-zinc-400">
               Period ends {new Date(profile.billing_period_end).toLocaleDateString()}
             </p>
           ) : null}
@@ -249,7 +249,7 @@ export default async function DashboardPage({
               <li key={row.id} className="flex flex-wrap items-center gap-3 py-4">
                 <div className="flex-1">
                   <p className="font-medium text-zinc-100">{row.title}</p>
-                  <p className="text-xs uppercase tracking-widest text-zinc-500">
+                  <p className="text-xs uppercase tracking-widest text-zinc-400">
                     {row.status}
                   </p>
                 </div>

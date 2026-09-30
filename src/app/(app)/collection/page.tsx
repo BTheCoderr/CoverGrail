@@ -33,7 +33,7 @@ export default async function CollectionPage() {
         <SlabCard label="Saved scans (sample)">
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="text-xs uppercase tracking-widest text-zinc-500">
+              <thead className="text-xs uppercase tracking-widest text-zinc-400">
                 <tr>
                   <th className="pb-3 pr-6 font-medium">Title</th>
                   <th className="pb-3 pr-6 font-medium">Predicted grade</th>
@@ -114,7 +114,7 @@ export default async function CollectionPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
-              <thead className="text-xs uppercase tracking-widest text-zinc-500">
+              <thead className="text-xs uppercase tracking-widest text-zinc-400">
                 <tr>
                   <th className="pb-3 pr-6 font-medium">Title</th>
                   <th className="pb-3 pr-6 font-medium">Status</th>

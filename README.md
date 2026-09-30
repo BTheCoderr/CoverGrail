@@ -8,6 +8,10 @@ CoverGrail helps collectors review comic-book photos before paying for professio
 
 **Live app:** https://covergrail.netlify.app
 
+![CoverGrail production landing page](https://d33wubrfki0l68.cloudfront.net/6abc67e0109b6900087bdb37/screenshot_2026-09-30-01-38-08-0000.webp)
+
+[Architecture](docs/ARCHITECTURE.md) · [Security model](docs/SECURITY.md) · [Deployment](docs/DEPLOYMENT.md)
+
 ## Product status
 
 CoverGrail is running against its dedicated production Supabase backend.
@@ -138,6 +142,8 @@ The repository includes automated checks for:
 - production dependency audit
 - critical vulnerability gate
 - Deno type checking for Supabase Edge Functions
+- Chromium end-to-end browser tests
+- automated WCAG 2.0/2.1 A/AA checks with axe
 
 Regression coverage currently includes core quota rules, scan-image ordering, and image-signature validation.
 
@@ -278,7 +284,14 @@ Run a production build:
 npm run build
 ```
 
-GitHub Actions runs these checks automatically and also validates the Supabase Edge Function with Deno.
+Run browser E2E + accessibility checks:
+
+```bash
+npx playwright install chromium
+npm run test:e2e
+```
+
+GitHub Actions runs these checks automatically, installs Chromium for Playwright, runs the browser/accessibility suite, uploads the Playwright report, and validates the Supabase Edge Function with Deno.
 
 ## Production rollout
 

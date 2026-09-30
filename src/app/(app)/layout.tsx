@@ -95,7 +95,7 @@ export default function AppLayout({
               </Link>
             </p>
           ) : null}
-          <div className="flex flex-wrap gap-4 text-xs text-zinc-500">
+          <div className="flex flex-wrap gap-4 text-xs text-zinc-400">
             <p>
               CoverGrail is not affiliated with CGC or CBCS and does not guarantee
               official grading outcomes.
