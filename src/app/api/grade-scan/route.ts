@@ -4,6 +4,7 @@ import {
   userHasScanQuota,
 } from "@/lib/billing/scanQuota";
 import { createClient } from "@/lib/supabase/server";
+import { recordProductEvent } from "@/lib/telemetry";
 import { sortScanImages } from "@/lib/scans/sort-images";
 import { NextResponse } from "next/server";
 
@@ -106,6 +107,10 @@ export async function POST(request: Request) {
     );
   }
 
+  await recordProductEvent(supabase, user.id, "grade_started", scanId, {
+    status: "grading",
+  });
+
   const { data: imagesRaw, error: imgErr } = await supabase
     .from("scan_images")
     .select("*")
@@ -192,6 +197,10 @@ export async function POST(request: Request) {
       .eq("id", scanId);
 
     await consumeScanAfterGrade(supabase, scanId);
+    await recordProductEvent(supabase, user.id, "grade_completed", scanId, {
+      model: modelId,
+      status: "complete",
+    });
 
     return NextResponse.json({ ok: true });
   } catch (e) {
@@ -203,6 +212,9 @@ export async function POST(request: Request) {
         error_message: message,
       })
       .eq("id", scanId);
+    await recordProductEvent(supabase, user.id, "grade_failed", scanId, {
+      status: "failed",
+    });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
