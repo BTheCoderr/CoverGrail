@@ -41,6 +41,13 @@ npm run dev
 
 Visit `http://localhost:3000`.
 
+## Production mode
+
+- Production uses the dedicated CoverGrail Supabase project in BTheWorks.
+- `NEXT_PUBLIC_DEMO_MODE=false`: real Supabase auth/data paths are enabled.
+- `MOCK_GRADE=true`: grading stays deterministic/mock until live AI grading is intentionally enabled.
+- Paid checkout remains server-gated by the CoverGrail Supabase secret key.
+
 ## Product flows
 
 - Landing: headline/subhead, problem → how it works → example result → pricing preview → dealer CTA → disclaimer.
