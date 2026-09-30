@@ -1,0 +1,27 @@
+name: Netlify source handoff
+
+on:
+  push:
+    branches: [chore/netlify-source-handoff]
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout production main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Package production source
+        run: tar --exclude=.git -czf /tmp/covergrail-main.tar.gz .
+
+      - name: Upload production source
+        uses: actions/upload-artifact@v4
+        with:
+          name: covergrail-main-source
+          path: /tmp/covergrail-main.tar.gz
+          retention-days: 1
