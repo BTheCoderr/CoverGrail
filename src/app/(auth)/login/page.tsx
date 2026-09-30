@@ -140,14 +140,14 @@ export default async function LoginPage({
 
         <LoginEmailForm rateLimitCooldown={isRateLimit} linkJustSent={linkSentSuccess} />
 
-        <p className="mt-8 text-center text-xs text-zinc-500">
+        <p className="mt-8 text-center text-xs text-zinc-400">
           CoverGrail is not affiliated with CGC or CBCS and does not guarantee
           official grading outcomes.
         </p>
       </div>
       <Link
         href="/"
-        className="mt-8 text-center text-sm text-zinc-500 hover:text-amber-400"
+        className="mt-8 text-center text-sm text-zinc-400 hover:text-amber-400"
       >
         ← Back to landing
       </Link>
