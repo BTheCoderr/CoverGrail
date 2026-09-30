@@ -66,8 +66,8 @@ export default function LandingPage() {
       </section>
 
       <section className="rounded-2xl border border-zinc-800/80 bg-zinc-950/60 px-6 py-8">
-        <Disclaimer className="text-center text-sm text-zinc-500" />
-        <p className="mx-auto mt-4 max-w-2xl text-center text-xs text-zinc-600">
+        <Disclaimer className="text-center text-sm text-zinc-400" />
+        <p className="mx-auto mt-4 max-w-2xl text-center text-xs text-zinc-400">
           Predictions are educational pre-submission estimates. CoverGrail does not guarantee
           official grading outcomes. CoverGrail is not affiliated with CGC or CBCS.
         </p>
