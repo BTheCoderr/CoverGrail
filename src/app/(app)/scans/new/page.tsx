@@ -9,6 +9,9 @@ const ERROR_MESSAGES: Record<string, string> = {
   missing_back: "Back cover photo is required.",
   missing_spine: "Spine photo is required.",
   file_too_large: "Each image must be under 12MB.",
+  upload_too_large: "The combined upload is too large. Keep the full set under 60MB.",
+  unsupported_image: "Use a real JPEG, PNG, or WebP image file.",
+  too_many_corners: "Upload up to four optional corner close-ups.",
   upload_failed: "Upload failed. Try again with smaller images.",
   create_failed: "Could not create scan. Please retry.",
 };
@@ -79,12 +82,12 @@ export default async function NewScanPage({
               <input
                 name="corners"
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp"
                 multiple
                 className="block w-full cursor-pointer rounded-xl border border-dashed border-zinc-700 bg-zinc-950/60 px-4 py-6 text-sm text-zinc-300 file:mr-4 file:rounded-lg file:border-0 file:bg-amber-400 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-950"
               />
               <span className="text-xs text-zinc-500">
-                Select multiple files in one go if needed.
+                Select up to four JPEG, PNG, or WebP files.
               </span>
             </label>
           </div>
@@ -168,7 +171,7 @@ function PhotoField({
       <input
         name={name}
         type="file"
-        accept="image/*"
+        accept="image/jpeg,image/png,image/webp"
         required={required}
         className="block w-full cursor-pointer rounded-xl border border-dashed border-zinc-700 bg-zinc-950/60 px-4 py-6 text-sm text-zinc-300 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-800 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-50"
       />

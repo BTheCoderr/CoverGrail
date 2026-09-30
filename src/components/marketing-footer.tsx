@@ -20,6 +20,12 @@ export function MarketingFooter() {
           <Link href="/disclaimer" className="hover:text-amber-400">
             Disclaimer
           </Link>
+          <Link href="/privacy" className="hover:text-amber-400">
+            Privacy
+          </Link>
+          <Link href="/terms" className="hover:text-amber-400">
+            Beta Terms
+          </Link>
           <Link href="/login" className="hover:text-amber-400">
             Sign in
           </Link>

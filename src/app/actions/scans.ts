@@ -3,21 +3,14 @@
 import { userHasScanQuota } from "@/lib/billing/scanQuota";
 import { isDemoMode } from "@/lib/demo/mode";
 import { createClient } from "@/lib/supabase/server";
+import { recordProductEvent } from "@/lib/telemetry";
+import {
+  inspectUploadedImage,
+  MAX_CORNER_IMAGES,
+  MAX_IMAGE_BYTES,
+  MAX_TOTAL_UPLOAD_BYTES,
+} from "@/lib/uploads/image-validation";
 import { redirect } from "next/navigation";
-
-const MAX_BYTES = 12 * 1024 * 1024;
-
-function extFromFile(file: File): string {
-  const mime = file.type;
-  if (mime === "image/png") return "png";
-  if (mime === "image/webp") return "webp";
-  if (mime === "image/jpeg" || mime === "image/jpg") return "jpg";
-  const name = file.name.toLowerCase();
-  if (name.endsWith(".png")) return "png";
-  if (name.endsWith(".webp")) return "webp";
-  if (name.endsWith(".jpg") || name.endsWith(".jpeg")) return "jpg";
-  return "jpg";
-}
 
 async function assertUnderQuota(userId: string, email: string | undefined) {
   const supabase = await createClient();
@@ -79,19 +72,30 @@ export async function createScan(formData: FormData) {
     redirect("/scans/new?error=missing_spine");
   }
 
-  for (const f of [front, back, spine]) {
-    if (f.size > MAX_BYTES) {
-      redirect("/scans/new?error=file_too_large");
-    }
-  }
-
   const cornerEntries = formData
     .getAll("corners")
     .filter((f) => f instanceof File && f.size > 0) as File[];
-  for (const f of cornerEntries) {
-    if (f.size > MAX_BYTES) {
+
+  if (cornerEntries.length > MAX_CORNER_IMAGES) {
+    redirect("/scans/new?error=too_many_corners");
+  }
+
+  const allFiles = [front, back, spine, ...cornerEntries];
+  const totalBytes = allFiles.reduce((sum, file) => sum + file.size, 0);
+  if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
+    redirect("/scans/new?error=upload_too_large");
+  }
+
+  const inspected = new Map<File, Awaited<ReturnType<typeof inspectUploadedImage>>>();
+  for (const file of allFiles) {
+    if (file.size > MAX_IMAGE_BYTES) {
       redirect("/scans/new?error=file_too_large");
     }
+    const detected = await inspectUploadedImage(file);
+    if (!detected) {
+      redirect("/scans/new?error=unsupported_image");
+    }
+    inspected.set(file, detected);
   }
 
   if (isDemoMode()) {
@@ -144,13 +148,14 @@ export async function createScan(formData: FormData) {
     image_type: "front_cover" | "back_cover" | "spine",
     file: File,
   ) {
-    const ext = extFromFile(file);
-    const path = `${userId}/${scanId}/${image_type}.${ext}`;
+    const detected = inspected.get(file);
+    if (!detected) throw new Error("unsupported_image");
+    const path = `${userId}/${scanId}/${image_type}.${detected.ext}`;
     const buf = Buffer.from(await file.arrayBuffer());
     const { error } = await supabase.storage
       .from("scan-images")
       .upload(path, buf, {
-        contentType: file.type || "image/jpeg",
+        contentType: detected.mime,
         upsert: false,
       });
     if (error) throw error;
@@ -171,13 +176,14 @@ export async function createScan(formData: FormData) {
 
     let cornerIndex = 0;
     for (const file of cornerEntries) {
-      const ext = extFromFile(file);
-      const path = `${userId}/${scanId}/corner_${cornerIndex}.${ext}`;
+      const detected = inspected.get(file);
+      if (!detected) throw new Error("unsupported_image");
+      const path = `${userId}/${scanId}/corner_${cornerIndex}.${detected.ext}`;
       const buf = Buffer.from(await file.arrayBuffer());
       const { error } = await supabase.storage
         .from("scan-images")
         .upload(path, buf, {
-          contentType: file.type || "image/jpeg",
+          contentType: detected.mime,
           upsert: false,
         });
       if (error) throw error;
@@ -199,8 +205,15 @@ export async function createScan(formData: FormData) {
         error_message: e instanceof Error ? e.message : "upload_failed",
       })
       .eq("id", scanId);
+    await recordProductEvent(supabase, userId, "scan_upload_failed", scanId, {
+      status: "failed",
+    });
     redirect("/scans/new?error=upload_failed");
   }
+
+  await recordProductEvent(supabase, userId, "scan_created", scanId, {
+    image_count: 3 + cornerEntries.length,
+  });
 
   redirect(`/scans/${scanId}`);
 }

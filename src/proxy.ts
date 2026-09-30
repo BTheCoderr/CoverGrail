@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware";
 
-const protectedPrefixes = ["/dashboard", "/scans", "/collection"];
+const protectedPrefixes = ["/dashboard", "/scans", "/collection", "/account", "/feedback"];
 
 /** Next.js inlines NEXT_PUBLIC_* at build time — OK for temporary QA bypass only. */
 function isDemoModeEnv(): boolean {
@@ -17,7 +17,7 @@ function isDemoPublicAppPath(pathname: string): boolean {
   return m?.[1] === "demo";
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isProtected = protectedPrefixes.some(
@@ -65,5 +65,7 @@ export const config = {
     "/scans/:path*",
     "/collection",
     "/collection/:path*",
+    "/account",
+    "/feedback",
   ],
 };

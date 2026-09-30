@@ -42,6 +42,16 @@ export default function AppLayout({
             <Link href="/pricing" className="hover:text-amber-400">
               Pricing
             </Link>
+            {!demo ? (
+              <>
+                <Link href="/feedback" className="hover:text-amber-400">
+                  Feedback
+                </Link>
+                <Link href="/account" className="hover:text-amber-400">
+                  Account
+                </Link>
+              </>
+            ) : null}
             {demo ? (
               <Link
                 href="/login"
@@ -85,10 +95,14 @@ export default function AppLayout({
               </Link>
             </p>
           ) : null}
-          <p className="text-xs leading-relaxed text-zinc-500">
-            CoverGrail is not affiliated with CGC or CBCS and does not guarantee
-            official grading outcomes.
-          </p>
+          <div className="flex flex-wrap gap-4 text-xs text-zinc-500">
+            <p>
+              CoverGrail is not affiliated with CGC or CBCS and does not guarantee
+              official grading outcomes.
+            </p>
+            <Link href="/privacy" className="hover:text-amber-400">Privacy</Link>
+            <Link href="/terms" className="hover:text-amber-400">Beta Terms</Link>
+          </div>
         </div>
       </footer>
     </div>
