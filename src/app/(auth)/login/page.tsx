@@ -144,14 +144,6 @@ export default async function LoginPage({
           CoverGrail is not affiliated with CGC or CBCS and does not guarantee
           official grading outcomes.
         </p>
-        <p className="mt-4 text-center text-xs text-zinc-600">
-          <Link
-            href="/api/health/auth-config"
-            className="underline decoration-zinc-600 underline-offset-2 hover:text-zinc-400"
-          >
-            Check Supabase connectivity (deploy diagnostics)
-          </Link>
-        </p>
       </div>
       <Link
         href="/"
