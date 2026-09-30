@@ -106,7 +106,7 @@ Implemented safeguards include:
 - publishable key only in browser-facing configuration
 - atomic/idempotent scan-quota consumption
 - browser users cannot modify billing, plan, or scan-credit fields
-- grading concurrency lock
+- duplicate-scan grading lock plus one in-flight grading job per user
 - server-side image signature validation
 - JWT-protected account-deletion Edge Function
 - full account cleanup including stored comic images
@@ -142,8 +142,10 @@ The repository includes automated checks for:
 - production dependency audit
 - critical vulnerability gate
 - Deno type checking for Supabase Edge Functions
-- Chromium end-to-end browser tests
+- desktop + mobile Chromium end-to-end browser tests
 - automated WCAG 2.0/2.1 A/AA checks with axe
+- production security-header checks
+- production health-endpoint privacy checks
 
 Regression coverage currently includes core quota rules, scan-image ordering, and image-signature validation.
 
@@ -291,7 +293,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-GitHub Actions runs these checks automatically, installs Chromium for Playwright, runs the browser/accessibility suite, uploads the Playwright report, and validates the Supabase Edge Function with Deno.
+GitHub Actions runs these checks automatically, installs Chromium for Playwright, runs desktop and mobile browser/accessibility suites, verifies production security headers and health-endpoint redaction, uploads the Playwright report, and validates the Supabase Edge Function with Deno.
 
 ## Production rollout
 
