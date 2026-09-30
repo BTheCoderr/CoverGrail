@@ -40,3 +40,11 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Edge Function type check
+        run: deno check supabase/functions/delete-account/index.ts
