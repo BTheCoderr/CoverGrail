@@ -85,7 +85,11 @@ export async function gradeComicPhotos(params: {
     );
   }
 
-  const client = new OpenAI({ apiKey });
+  const client = new OpenAI({
+    apiKey,
+    timeout: 25_000,
+    maxRetries: 1,
+  });
   const model = params.model ?? process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
   const metaLines = [

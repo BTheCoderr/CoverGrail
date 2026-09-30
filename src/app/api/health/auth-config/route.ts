@@ -89,6 +89,10 @@ export async function GET() {
       console.log(`[auth-config] auth health (keyed) status=${probes.authHealthWithKey.status}`);
     }
 
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ ok });
+    }
+
     return NextResponse.json({
       ok,
       env,
@@ -135,6 +139,10 @@ export async function GET() {
       keyType: "unknown",
     };
     const keyedCatch = { ...fallbackProbe, targetPath: "/auth/v1/health", keyType: "unknown" };
+
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.json({ ok: false }, { status: 200 });
+    }
 
     return NextResponse.json(
       {

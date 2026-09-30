@@ -49,3 +49,33 @@ test("demo scan form still enforces required uploads", async ({ page }) => {
   );
   expect(firstValid).toBe(false);
 });
+
+
+test("production responses include baseline security headers", async ({ page }) => {
+  const response = await page.goto("/");
+  expect(response).not.toBeNull();
+  expect(response?.headers()["x-content-type-options"]).toBe("nosniff");
+  expect(response?.headers()["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  expect(response?.headers()["x-frame-options"]).toBe("DENY");
+  expect(response?.headers()["permissions-policy"]).toContain("camera=()");
+  expect(response?.headers()["permissions-policy"]).toContain("microphone=()");
+  expect(response?.headers()["permissions-policy"]).toContain("geolocation=()");
+});
+
+test("production auth health endpoint exposes status only", async ({ request }) => {
+  const response = await request.get("/api/health/auth-config");
+  expect(response.ok()).toBeTruthy();
+  const body = await response.json();
+  expect(Object.keys(body).sort()).toEqual(["ok"]);
+  expect(typeof body.ok).toBe("boolean");
+});
+
+test("core public pages do not overflow the viewport", async ({ page }) => {
+  for (const route of ["/", "/login", "/pricing", "/grading-guide"]) {
+    await page.goto(route);
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(overflow, `horizontal overflow on ${route}`).toBe(false);
+  }
+});
