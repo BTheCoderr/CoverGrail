@@ -1,4 +1,4 @@
-name: Netlify source handoff
+name: Netlify production deploy handoff
 
 on:
   push:
@@ -8,20 +8,34 @@ permissions:
   contents: read
 
 jobs:
-  package:
+  deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SITE_ID: 2e170383-386f-453f-a27c-e34329dcf375
+      TOKEN_PRIMARY: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      TOKEN_ALT: ${{ secrets.NETLIFY_TOKEN }}
+      TOKEN_PAT: ${{ secrets.NETLIFY_PERSONAL_ACCESS_TOKEN }}
     steps:
-      - name: Checkout production main
+      - name: Checkout verified production source
         uses: actions/checkout@v4
         with:
           ref: main
 
-      - name: Package production source
-        run: tar --exclude=.git -czf /tmp/covergrail-main.tar.gz .
+      - name: Select existing Netlify credential
+        shell: bash
+        run: |
+          TOKEN="${TOKEN_PRIMARY:-${TOKEN_ALT:-$TOKEN_PAT}}"
+          if [ -z "$TOKEN" ]; then
+            echo "::error::No existing Netlify auth secret was found under the standard secret names."
+            exit 1
+          fi
+          echo "NETLIFY_AUTH_TOKEN=$TOKEN" >> "$GITHUB_ENV"
 
-      - name: Upload production source
-        uses: actions/upload-artifact@v4
+      - name: Use Node 22
+        uses: actions/setup-node@v4
         with:
-          name: covergrail-main-source
-          path: /tmp/covergrail-main.tar.gz
-          retention-days: 1
+          node-version: "22"
+
+      - name: Deploy main to CoverGrail production
+        run: npx --yes netlify-cli@latest deploy --prod --build --site "$SITE_ID" --auth "$NETLIFY_AUTH_TOKEN"
