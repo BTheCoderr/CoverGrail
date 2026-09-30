@@ -59,6 +59,8 @@ Limits:
 ## AI / grading controls
 
 - duplicate grading requests are locked before model execution,
+- a user is limited to one in-flight grading job at a time,
+- live AI requests have bounded timeout/retry behavior,
 - structured responses are schema-validated,
 - successful scans debit quota through an atomic idempotent RPC,
 - mock grading is available for infrastructure validation without model spend.
@@ -82,7 +84,10 @@ CI runs:
 - production build,
 - Playwright E2E checks,
 - axe accessibility checks,
-- Deno Edge Function type checking.
+- Deno Edge Function type checking,
+- desktop + mobile Playwright coverage,
+- baseline production security-header assertions,
+- health-endpoint response redaction assertions.
 
 ## Reporting
 
