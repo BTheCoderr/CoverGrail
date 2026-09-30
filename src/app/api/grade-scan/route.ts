@@ -86,10 +86,25 @@ export async function POST(request: Request) {
     );
   }
 
-  await supabase
+  const { data: lockedScan, error: lockError } = await supabase
     .from("comic_scans")
     .update({ status: "grading", error_message: null })
-    .eq("id", scanId);
+    .eq("id", scanId)
+    .in("status", ["pending", "failed"])
+    .select("id")
+    .maybeSingle();
+
+  if (lockError) {
+    console.error("[grade-scan] Could not acquire grading lock:", lockError.message);
+    return NextResponse.json({ error: "Could not start grading" }, { status: 500 });
+  }
+
+  if (!lockedScan) {
+    return NextResponse.json(
+      { error: "This scan is already being graded." },
+      { status: 409 },
+    );
+  }
 
   const { data: imagesRaw, error: imgErr } = await supabase
     .from("scan_images")
