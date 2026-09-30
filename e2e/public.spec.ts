@@ -13,16 +13,16 @@ test("landing page presents the core product", async ({ page }) => {
 
 test("public product and legal pages render", async ({ page }) => {
   const routes = [
-    ["/grading-guide", /grading/i],
-    ["/pricing", /pricing/i],
-    ["/privacy", /privacy/i],
-    ["/terms", /terms/i],
+    ["/grading-guide", /Free Comic Grading Guide/i],
+    ["/pricing", /Know before you slab it/i],
+    ["/privacy", /CoverGrail Privacy Notice/i],
+    ["/terms", /CoverGrail Beta Terms/i],
   ] as const;
 
   for (const [route, heading] of routes) {
     const response = await page.goto(route);
     expect(response?.ok()).toBeTruthy();
-    await expect(page.getByRole("heading").filter({ hasText: heading }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: heading }).first()).toBeVisible();
   }
 });
 
@@ -39,7 +39,7 @@ test("non-demo protected route redirects signed-out users", async ({ page }) => 
 
 test("demo scan form still enforces required uploads", async ({ page }) => {
   await page.goto("/scans/new");
-  await expect(page.getByRole("heading", { name: /New|scan|grade/i })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Upload your comic/i })).toBeVisible();
 
   const requiredFiles = page.locator('input[type="file"][required]');
   expect(await requiredFiles.count()).toBeGreaterThanOrEqual(3);
