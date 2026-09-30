@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/supabase/database.types";
 import { getSupabaseServiceRoleKey, getSupabaseUrl } from "@/lib/supabase/env";
 
 /**
@@ -14,5 +15,5 @@ export function createAdminClient() {
   if (!key) {
     throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY or SUPABASE_SECRET_KEY");
   }
-  return createClient(url, key);
+  return createClient<Database>(url, key);
 }
