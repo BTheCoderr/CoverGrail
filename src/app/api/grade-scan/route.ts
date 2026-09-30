@@ -107,13 +107,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: activeGrades, error: activeGradesError } = await supabase
+  const { data: otherActiveGrades, error: activeGradesError } = await supabase
     .from("comic_scans")
-    .select("id, created_at")
+    .select("id")
     .eq("user_id", user.id)
     .eq("status", "grading")
-    .order("created_at", { ascending: true })
-    .order("id", { ascending: true });
+    .neq("id", scanId)
+    .limit(1);
 
   if (activeGradesError) {
     await supabase
@@ -126,8 +126,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const winner = activeGrades?.[0]?.id;
-  if (winner && winner !== scanId) {
+  if ((otherActiveGrades ?? []).length > 0) {
     await supabase
       .from("comic_scans")
       .update({ status: "pending", error_message: null })
@@ -237,16 +236,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   } catch (e) {
     const message = e instanceof Error ? e.message : "grade_failed";
+    const timeout =
+      e instanceof Error &&
+      (e.name === "APIConnectionTimeoutError" ||
+        message.toLowerCase().includes("timed out") ||
+        message.toLowerCase().includes("timeout"));
+
+    console.error("[grade-scan] grading failed:", message);
+
     await supabase
       .from("comic_scans")
       .update({
         status: "failed",
-        error_message: message,
+        error_message: timeout ? "grading_timeout" : "grade_failed",
       })
       .eq("id", scanId);
+
     await recordProductEvent(supabase, user.id, "grade_failed", scanId, {
       status: "failed",
     });
-    return NextResponse.json({ error: message }, { status: 500 });
+
+    return NextResponse.json(
+      {
+        error: timeout
+          ? "Grading provider timed out. Please retry."
+          : "Grading failed. Please retry.",
+      },
+      { status: timeout ? 504 : 500 },
+    );
   }
 }
