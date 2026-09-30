@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createSupabaseMiddlewareClient } from "@/lib/supabase/middleware";
 
-const protectedPrefixes = ["/dashboard", "/scans", "/collection"];
+const protectedPrefixes = ["/dashboard", "/scans", "/collection", "/account", "/feedback"];
 
 /** Next.js inlines NEXT_PUBLIC_* at build time — OK for temporary QA bypass only. */
 function isDemoModeEnv(): boolean {
@@ -65,5 +65,7 @@ export const config = {
     "/scans/:path*",
     "/collection",
     "/collection/:path*",
+    "/account",
+    "/feedback",
   ],
 };
