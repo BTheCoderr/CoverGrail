@@ -1,5 +1,27 @@
 # CoverGrail
 
+<!-- repo-intro:start -->
+**Project snapshot:** CoverGrail is an AI-assisted comic pre-grading workspace that combines structured image intake, private collection tracking, production Supabase security, and a staged path from deterministic beta grading to live vision models.
+
+**What it demonstrates:** Next.js · TypeScript · Supabase Auth/Postgres/Storage/RLS · Edge Functions · image validation · AI adapter design · Playwright/accessibility/security QA.
+<!-- repo-intro:end -->
+
+<!-- portfolio-refresh:start -->
+## Product at a glance
+
+| Area | Current production path |
+| --- | --- |
+| Input | Structured front/back/spine/detail comic photos |
+| Output | Educational pre-grade range + visible-defect cues |
+| Collection | Private scans + later confirmed-grade comparison |
+| Backend | Supabase Auth/Postgres/Storage/RLS + Edge Functions |
+| Reliability | Duplicate grading lock, quota protection, image-signature validation |
+| QA | Regression, build, dependency audit, Chromium E2E, accessibility, security-header checks |
+| Rollout | Real production data flow now; live vision grading can be enabled separately |
+
+CoverGrail deliberately validates the **real auth/storage/RLS/collection pipeline before spending model credits**. That makes the beta useful for testing product reliability even while grading remains in deterministic mock mode.
+<!-- portfolio-refresh:end -->
+
 **AI-assisted pre-grading decision support for comic collectors — before you slab it, scan it.**
 
 CoverGrail helps collectors review comic-book photos before paying for professional grading. Users upload a structured photo set, receive a predicted grade range with visible defect cues, and save the result to a private collection for later comparison with an official grade.
