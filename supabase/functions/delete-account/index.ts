@@ -73,24 +73,34 @@ Deno.serve(async (req: Request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
-  const { data: imageRows, error: imageError } = await admin
-    .from("scan_images")
-    .select("storage_path")
-    .eq("user_id", user.id);
+  const paths: string[] = [];
+  const pageSize = 500;
+  for (let from = 0; ; from += pageSize) {
+    const { data: imageRows, error: imageError } = await admin
+      .from("scan_images")
+      .select("storage_path")
+      .eq("user_id", user.id)
+      .range(from, from + pageSize - 1);
 
-  if (imageError) {
-    console.error("[delete-account] Could not read image paths:", imageError.message);
-    return json({ error: "Could not prepare account deletion" }, 500);
+    if (imageError) {
+      console.error("[delete-account] Could not read image paths:", imageError.message);
+      return json({ error: "Could not prepare account deletion" }, 500);
+    }
+
+    for (const row of imageRows ?? []) {
+      if (typeof row.storage_path === "string" && row.storage_path.length > 0) {
+        paths.push(row.storage_path);
+      }
+    }
+
+    if ((imageRows ?? []).length < pageSize) break;
   }
 
-  const paths = (imageRows ?? [])
-    .map((row) => row.storage_path)
-    .filter((path): path is string => typeof path === "string" && path.length > 0);
-
-  if (paths.length > 0) {
+  for (let start = 0; start < paths.length; start += 100) {
+    const batch = paths.slice(start, start + 100);
     const { error: storageError } = await admin.storage
       .from("scan-images")
-      .remove(paths);
+      .remove(batch);
 
     if (storageError) {
       console.error("[delete-account] Storage cleanup failed:", storageError.message);
