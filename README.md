@@ -1,5 +1,11 @@
 # CoverGrail
 
+<!-- repo-intro:start -->
+**Project snapshot:** CoverGrail is a comic-collecting MVP for educational pre-submission grade estimates, helping collectors inspect a book before deciding whether to pay for third-party grading.
+
+**What it demonstrates:** Next.js · Supabase Auth/Storage · vision-AI pipeline · structured JSON · Stripe-ready SaaS UX.
+<!-- repo-intro:end -->
+
 Premium Next.js MVP for comic collectors who want **pre-submission grade estimates** before paying third-party grading fees. Positioning: **before you slab it, scan it.** CoverGrail is **not affiliated with CGC or CBCS**; predictions are **educational pre-submission estimates**.
 
 ## Stack
