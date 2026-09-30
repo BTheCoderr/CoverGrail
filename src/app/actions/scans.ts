@@ -3,6 +3,7 @@
 import { userHasScanQuota } from "@/lib/billing/scanQuota";
 import { isDemoMode } from "@/lib/demo/mode";
 import { createClient } from "@/lib/supabase/server";
+import { recordProductEvent } from "@/lib/telemetry";
 import {
   inspectUploadedImage,
   MAX_CORNER_IMAGES,
@@ -204,8 +205,15 @@ export async function createScan(formData: FormData) {
         error_message: e instanceof Error ? e.message : "upload_failed",
       })
       .eq("id", scanId);
+    await recordProductEvent(supabase, userId, "scan_upload_failed", scanId, {
+      status: "failed",
+    });
     redirect("/scans/new?error=upload_failed");
   }
+
+  await recordProductEvent(supabase, userId, "scan_created", scanId, {
+    image_count: 3 + cornerEntries.length,
+  });
 
   redirect(`/scans/${scanId}`);
 }
