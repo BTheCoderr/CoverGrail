@@ -66,7 +66,7 @@ http://localhost:3000/auth/callback
 5. Deploy/update Edge Functions if required.
 6. Merge only after checks pass.
 7. Confirm Netlify deploy points to the merge commit.
-8. Run a production smoke test.
+8. Run production smoke tests on desktop and mobile viewports.
 9. Re-run Supabase Security Advisor after DDL/security changes.
 
 ## Beta rollout
@@ -93,7 +93,7 @@ login
   -> account deletion
 ```
 
-After that, live AI can be enabled with usage limits and cost monitoring.
+After that, live AI can be enabled with the existing timeout/retry bounds, per-user in-flight grading guard, usage limits, and cost monitoring.
 
 ## Rollback
 
