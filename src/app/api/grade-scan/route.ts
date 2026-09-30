@@ -107,6 +107,38 @@ export async function POST(request: Request) {
     );
   }
 
+  const { data: activeGrades, error: activeGradesError } = await supabase
+    .from("comic_scans")
+    .select("id, created_at")
+    .eq("user_id", user.id)
+    .eq("status", "grading")
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
+
+  if (activeGradesError) {
+    await supabase
+      .from("comic_scans")
+      .update({ status: "failed", error_message: "grading_guard_failed" })
+      .eq("id", scanId);
+    return NextResponse.json(
+      { error: "Could not verify grading capacity" },
+      { status: 500 },
+    );
+  }
+
+  const winner = activeGrades?.[0]?.id;
+  if (winner && winner !== scanId) {
+    await supabase
+      .from("comic_scans")
+      .update({ status: "pending", error_message: null })
+      .eq("id", scanId);
+
+    return NextResponse.json(
+      { error: "Another scan is already being graded. Try again shortly." },
+      { status: 429 },
+    );
+  }
+
   await recordProductEvent(supabase, user.id, "grade_started", scanId, {
     status: "grading",
   });
