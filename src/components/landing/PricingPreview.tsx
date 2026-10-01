@@ -4,20 +4,20 @@ const TIERS = [
   {
     name: "Free",
     price: "$0",
-    detail: "3 scans",
-    bullets: ["Likely grade range", "Defect report", "Recommendation"],
+    detail: "validation access",
+    bullets: ["3 grading credits reserved", "Private scan history", "Sample result workflow"],
   },
   {
     name: "Pay per scan",
     price: "$1.99",
-    detail: "per scan",
-    bullets: ["No subscription", "Same full report"],
+    detail: "planned · paused",
+    bullets: ["No checkout during validation", "Launches only after grading is calibrated"],
   },
   {
     name: "Collector",
     price: "$19.99",
-    detail: "/mo · 25 scans",
-    bullets: ["Private grading history", "25 scans/month when paid grading launches"],
+    detail: "/mo · planned",
+    bullets: ["Private grading history", "25 scans/month after paid grading launches"],
   },
 ];
 
