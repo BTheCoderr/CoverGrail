@@ -1,3 +1,4 @@
+import { isMockGradeEnabled } from "@/lib/ai/mode";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getSupabaseServiceRoleKey } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
@@ -17,6 +18,13 @@ function priceIdForPlan(plan: Plan): string | undefined {
 }
 
 export async function POST(request: Request) {
+  if (isMockGradeEnabled()) {
+    return NextResponse.json(
+      { error: "Paid checkout is paused while CoverGrail validates live grading." },
+      { status: 503 },
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
