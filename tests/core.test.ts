@@ -5,6 +5,8 @@ import {
   subscriptionAllowsMonthlyQuotaConsumption,
   userHasScanQuota,
 } from "../src/lib/billing/scanQuota.ts";
+import { isMockGradeEnabled } from "../src/lib/ai/mode.ts";
+import { comicGradeResultSchema } from "../src/lib/ai/comicGradeSchema.ts";
 import { detectImageType } from "../src/lib/uploads/image-validation.ts";
 import { sortScanImages } from "../src/lib/scans/sort-images.ts";
 
@@ -67,4 +69,62 @@ test("image signatures detect JPEG, PNG and WebP", () => {
     { mime: "image/webp", ext: "webp" },
   );
   assert.equal(detectImageType(Uint8Array.from([1,2,3,4,5])), null);
+});
+
+
+test("mock grading flag recognizes supported truthy values", () => {
+  const previous = process.env.MOCK_GRADE;
+  try {
+    process.env.MOCK_GRADE = "true";
+    assert.equal(isMockGradeEnabled(), true);
+    process.env.MOCK_GRADE = "1";
+    assert.equal(isMockGradeEnabled(), true);
+    process.env.MOCK_GRADE = "false";
+    assert.equal(isMockGradeEnabled(), false);
+  } finally {
+    if (previous === undefined) delete process.env.MOCK_GRADE;
+    else process.env.MOCK_GRADE = previous;
+  }
+});
+
+
+test("live grading schema only accepts standard grade points and null economics", () => {
+  const base = {
+    confidence: "medium",
+    recommendation: "maybe",
+    photo_quality_score: 8,
+    detected_defects: [],
+    reasoning_summary: "Test",
+    estimated_grading_cost: null,
+    estimated_upside: null,
+    next_steps: [],
+  };
+
+  assert.equal(
+    comicGradeResultSchema.safeParse({
+      ...base,
+      predicted_grade_low: 9.4,
+      predicted_grade_high: 9.8,
+    }).success,
+    true,
+  );
+
+  assert.equal(
+    comicGradeResultSchema.safeParse({
+      ...base,
+      predicted_grade_low: 9.3,
+      predicted_grade_high: 9.8,
+    }).success,
+    false,
+  );
+
+  assert.equal(
+    comicGradeResultSchema.safeParse({
+      ...base,
+      predicted_grade_low: 9.4,
+      predicted_grade_high: 9.8,
+      estimated_grading_cost: 85,
+    }).success,
+    false,
+  );
 });

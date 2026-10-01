@@ -1,4 +1,5 @@
 import { Disclaimer } from "@/components/disclaimer";
+import { isMockGradeEnabled } from "@/lib/ai/mode";
 import { PlanCheckoutButton } from "@/components/pricing/PlanCheckoutButton";
 import { isStripeCheckoutReady } from "@/lib/stripe";
 import Link from "next/link";
@@ -9,15 +10,11 @@ type Tier = {
   subtitle: string;
   bullets: string[];
   highlight?: boolean;
-  mode: "link" | "stripe" | "mailto";
+  mode: "link" | "stripe";
   href?: string;
-  mailtoHref?: string;
   buttonLabel: string;
   checkoutPlan?: "single_scan" | "collector" | "dealer";
 };
-
-const ENTERPRISE_MAIL =
-  "mailto:hello@covergrail.com?subject=CoverGrail%20Enterprise%20Licensing";
 
 const TIERS: Tier[] = [
   {
@@ -25,10 +22,10 @@ const TIERS: Tier[] = [
     price: "$0",
     subtitle: "Start here",
     bullets: [
-      "Includes 3 free scans",
-      "Basic grade range",
-      "Defect breakdown",
-      "Save scan history",
+      "3 free grading credits when live grading opens",
+      "Private scan history",
+      "Sample grading workflow",
+      "No payment required during validation",
     ],
     mode: "link",
     href: "/login",
@@ -65,27 +62,13 @@ const TIERS: Tier[] = [
     price: "$150",
     subtitle: "/ month · 250 scans",
     bullets: [
-      "Bulk lot workflow placeholder",
-      "Exportable reports placeholder",
-      "Priority roadmap access",
+      "Up to 250 scans per month when paid grading launches",
+      "Private grading history",
       "Best for dealers, estate buyers, and shop owners",
     ],
     mode: "stripe",
     checkoutPlan: "dealer",
     buttonLabel: "Subscribe",
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    subtitle: "Starting at $10,000/year",
-    bullets: [
-      "API access placeholder",
-      "White-label/integration support placeholder",
-      "For retailers, auction houses, and platforms",
-    ],
-    mode: "mailto",
-    mailtoHref: ENTERPRISE_MAIL,
-    buttonLabel: "Contact Sales",
   },
 ];
 
@@ -96,6 +79,8 @@ export default async function PricingPage({
 }) {
   const params = await searchParams;
   const stripeReady = isStripeCheckoutReady();
+  const gradingValidation = isMockGradeEnabled();
+  const checkoutReady = stripeReady && !gradingValidation;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-16">
@@ -112,10 +97,16 @@ export default async function PricingPage({
           Know before you slab it
         </h1>
         <p className="mt-4 text-zinc-400">
-          Move up the ladder—from free education to pay-per-scan, subscriptions, and enterprise
-          licensing. Stripe Checkout powers paid tiers once keys and prices are configured.
+          Start free while CoverGrail validates live grading quality. Paid plans stay paused until
+          results are based on real photo analysis and ready for outside users.
         </p>
       </div>
+
+      {gradingValidation ? (
+        <p className="mx-auto mt-8 max-w-2xl rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-center text-sm text-amber-100">
+          Paid checkout is paused during grading validation. No one can purchase mock results.
+        </p>
+      ) : null}
 
       <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-3 xl:gap-8">
         {TIERS.map((t) => (
@@ -138,10 +129,14 @@ export default async function PricingPage({
             {t.mode === "stripe" && t.checkoutPlan ? (
               <PlanCheckoutButton
                 plan={t.checkoutPlan}
-                disabled={!stripeReady}
+                disabled={!checkoutReady}
                 className="mt-8 flex h-11 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950 hover:bg-amber-300 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
               >
-                {stripeReady ? t.buttonLabel : "Configure Stripe to enable"}
+                {gradingValidation
+                  ? "Paid plans paused"
+                  : checkoutReady
+                    ? t.buttonLabel
+                    : "Checkout unavailable"}
               </PlanCheckoutButton>
             ) : null}
             {t.mode === "link" && t.href ? (
@@ -151,14 +146,6 @@ export default async function PricingPage({
               >
                 {t.buttonLabel}
               </Link>
-            ) : null}
-            {t.mode === "mailto" && t.mailtoHref ? (
-              <a
-                href={t.mailtoHref}
-                className="mt-8 inline-flex h-11 items-center justify-center rounded-xl border border-zinc-600 text-sm font-semibold text-zinc-100 hover:border-amber-500/40 hover:text-amber-400"
-              >
-                {t.buttonLabel}
-              </a>
             ) : null}
           </div>
         ))}

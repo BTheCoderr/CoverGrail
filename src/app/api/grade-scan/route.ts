@@ -1,8 +1,10 @@
 import { gradeComicPhotos } from "@/lib/ai/gradeComic";
+import { isMockGradeEnabled } from "@/lib/ai/mode";
 import {
   consumeScanAfterGrade,
   userHasScanQuota,
 } from "@/lib/billing/scanQuota";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { recordProductEvent } from "@/lib/telemetry";
 import { sortScanImages } from "@/lib/scans/sort-images";
@@ -34,6 +36,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  let admin: ReturnType<typeof createAdminClient>;
+  try {
+    admin = createAdminClient();
+  } catch {
+    return NextResponse.json(
+      { error: "Grading backend is unavailable." },
+      { status: 503 },
+    );
+  }
+
   const { data: scan, error: scanError } = await supabase
     .from("comic_scans")
     .select("*")
@@ -51,10 +63,11 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (existing) {
-    await supabase
+    await admin
       .from("comic_scans")
-      .update({ status: "complete", error_message: null })
-      .eq("id", scanId);
+      .update({ status: "complete", error_message: null, grading_started_at: null })
+      .eq("id", scanId)
+      .eq("user_id", user.id);
 
     try {
       await consumeScanAfterGrade(supabase, scanId);
@@ -72,6 +85,38 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, cached: true });
   }
 
+  if (isMockGradeEnabled()) {
+    await admin
+      .from("comic_scans")
+      .update({
+        status: "failed",
+        error_message: "grading_validation_paused",
+      })
+      .eq("id", scanId)
+      .eq("user_id", user.id);
+
+    return NextResponse.json(
+      { error: "Live grading is paused while CoverGrail validates accuracy." },
+      { status: 503 },
+    );
+  }
+
+  const staleCutoff = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+  const { error: staleRecoveryError } = await admin
+    .from("comic_scans")
+    .update({
+      status: "failed",
+      error_message: "grading_timeout",
+      grading_started_at: null,
+    })
+    .eq("user_id", user.id)
+    .eq("status", "grading")
+    .lt("grading_started_at", staleCutoff);
+
+  if (staleRecoveryError) {
+    console.error("[grade-scan] Stale grading recovery failed:", staleRecoveryError.message);
+  }
+
   const { data: quotaProfile } = await supabase
     .from("profiles")
     .select(
@@ -87,10 +132,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: lockedScan, error: lockError } = await supabase
+  const { data: lockedScan, error: lockError } = await admin
     .from("comic_scans")
-    .update({ status: "grading", error_message: null })
+    .update({
+      status: "grading",
+      error_message: null,
+      grading_started_at: new Date().toISOString(),
+    })
     .eq("id", scanId)
+    .eq("user_id", user.id)
     .in("status", ["pending", "failed"])
     .select("id")
     .maybeSingle();
@@ -112,14 +162,20 @@ export async function POST(request: Request) {
     .select("id")
     .eq("user_id", user.id)
     .eq("status", "grading")
+    .gte("grading_started_at", staleCutoff)
     .neq("id", scanId)
     .limit(1);
 
   if (activeGradesError) {
-    await supabase
+    await admin
       .from("comic_scans")
-      .update({ status: "failed", error_message: "grading_guard_failed" })
-      .eq("id", scanId);
+      .update({
+        status: "failed",
+        error_message: "grading_guard_failed",
+        grading_started_at: null,
+      })
+      .eq("id", scanId)
+      .eq("user_id", user.id);
     return NextResponse.json(
       { error: "Could not verify grading capacity" },
       { status: 500 },
@@ -127,10 +183,11 @@ export async function POST(request: Request) {
   }
 
   if ((otherActiveGrades ?? []).length > 0) {
-    await supabase
+    await admin
       .from("comic_scans")
-      .update({ status: "pending", error_message: null })
-      .eq("id", scanId);
+      .update({ status: "pending", error_message: null, grading_started_at: null })
+      .eq("id", scanId)
+      .eq("user_id", user.id);
 
     return NextResponse.json(
       { error: "Another scan is already being graded. Try again shortly." },
@@ -150,13 +207,15 @@ export async function POST(request: Request) {
   const images = sortScanImages(imagesRaw ?? []);
 
   if (imgErr || !images.length) {
-    await supabase
+    await admin
       .from("comic_scans")
       .update({
         status: "failed",
-        error_message: "No images for scan",
+        error_message: "missing_images",
+        grading_started_at: null,
       })
-      .eq("id", scanId);
+      .eq("id", scanId)
+      .eq("user_id", user.id);
     return NextResponse.json({ error: "No images for scan" }, { status: 400 });
   }
 
@@ -168,13 +227,15 @@ export async function POST(request: Request) {
       .createSignedUrl(path, 60 * 30);
 
     if (signErr || !signed?.signedUrl) {
-      await supabase
+      await admin
         .from("comic_scans")
         .update({
           status: "failed",
-          error_message: signErr?.message ?? "sign_failed",
+          error_message: "image_access_failed",
+          grading_started_at: null,
         })
-        .eq("id", scanId);
+        .eq("id", scanId)
+        .eq("user_id", user.id);
       return NextResponse.json(
         { error: "Could not sign image URLs" },
         { status: 500 },
@@ -196,7 +257,7 @@ export async function POST(request: Request) {
       },
     });
 
-    const { error: insErr } = await supabase.from("scan_results").insert({
+    const { error: insErr } = await admin.from("scan_results").insert({
       scan_id: scanId,
       predicted_grade_low: data.predicted_grade_low,
       predicted_grade_high: data.predicted_grade_high,
@@ -212,20 +273,26 @@ export async function POST(request: Request) {
     });
 
     if (insErr) {
-      await supabase
+      await admin
         .from("comic_scans")
         .update({
           status: "failed",
-          error_message: insErr.message,
+          error_message: "result_save_failed",
+          grading_started_at: null,
         })
-        .eq("id", scanId);
-      return NextResponse.json({ error: insErr.message }, { status: 500 });
+        .eq("id", scanId)
+        .eq("user_id", user.id);
+      return NextResponse.json(
+        { error: "Could not save grading result." },
+        { status: 500 },
+      );
     }
 
-    await supabase
+    await admin
       .from("comic_scans")
-      .update({ status: "complete", error_message: null })
-      .eq("id", scanId);
+      .update({ status: "complete", error_message: null, grading_started_at: null })
+      .eq("id", scanId)
+      .eq("user_id", user.id);
 
     await consumeScanAfterGrade(supabase, scanId);
     await recordProductEvent(supabase, user.id, "grade_completed", scanId, {
@@ -244,13 +311,15 @@ export async function POST(request: Request) {
 
     console.error("[grade-scan] grading failed:", message);
 
-    await supabase
+    await admin
       .from("comic_scans")
       .update({
         status: "failed",
         error_message: timeout ? "grading_timeout" : "grade_failed",
+        grading_started_at: null,
       })
-      .eq("id", scanId);
+      .eq("id", scanId)
+      .eq("user_id", user.id);
 
     await recordProductEvent(supabase, user.id, "grade_failed", scanId, {
       status: "failed",

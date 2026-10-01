@@ -14,9 +14,8 @@ export function ExampleResult() {
       <h2 className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-amber-400/90">
         Example result
       </h2>
-      <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-zinc-400">
-        Illustrative slab-style output—your scan will reflect your photos and
-        metadata.
+      <p className="mx-auto mt-3 max-w-2xl rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-center text-sm text-amber-100">
+        SAMPLE RESULT — illustrative only and not based on your photos.
       </p>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-3">
@@ -50,20 +49,10 @@ export function ExampleResult() {
           <DefectBreakdown defects={demo.detected_defects} />
         </SlabCard>
 
-        <SlabCard label="Economics (illustrative)">
-          <p className="text-xs uppercase tracking-wider text-zinc-500">
-            Est. grading cost
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-zinc-50">
-            ${demo.estimated_grading_cost.toFixed(0)}
-          </p>
-          <p className="mt-4 text-xs uppercase tracking-wider text-zinc-500">
-            Est. upside (USD)
-          </p>
-          <p className="mt-2 text-2xl font-semibold text-emerald-400/90">
-            {demo.estimated_upside != null
-              ? `$${demo.estimated_upside.toFixed(0)}`
-              : "—"}
+        <SlabCard label="Economics">
+          <p className="text-sm leading-relaxed text-zinc-400">
+            Not estimated in sample output. CoverGrail will only show dollar
+            economics when they are backed by verified fee and market data.
           </p>
         </SlabCard>
 

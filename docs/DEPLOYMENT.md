@@ -6,7 +6,7 @@
 - **Source:** GitHub `main`
 - **Auth / Database / Storage / Edge Functions:** Supabase
 - **Payments:** Stripe-ready server integration
-- **AI:** mock grading during current beta validation; live provider can be enabled independently
+- **AI:** live grading paused during current validation; sample output is marketing/demo-only
 
 ## Required Netlify environment
 
@@ -59,15 +59,16 @@ http://localhost:3000/auth/callback
 
 ## Safe release sequence
 
-1. Open a feature branch.
-2. Update code and migration/function source.
-3. Run CI.
-4. Apply verified database migration if required.
-5. Deploy/update Edge Functions if required.
-6. Merge only after checks pass.
-7. Confirm Netlify deploy points to the merge commit.
-8. Run production smoke tests on desktop and mobile viewports.
-9. Re-run Supabase Security Advisor after DDL/security changes.
+For audit #1, keep `MOCK_GRADE=true` until calibration is complete.
+
+1. Open a feature branch and run CI.
+2. Merge/deploy the web code **before** applying migration 007. With mock mode still enabled, the web release disables checkout and refuses to create fake grades without depending on the new grading-lock column.
+3. Smoke-test public pages and confirm checkout is paused.
+4. Apply `007_audit_1_blockers.sql` to the production Supabase project.
+5. Verify the new `grading_started_at` column, restricted `comic_scans` grants, revoked `scan_results` insert grant, and `scan-images` bucket limits.
+6. Re-run Supabase Security Advisor.
+7. Smoke-test login, upload, saved history, feedback, and account deletion.
+8. Keep live AI off. Enable it only in a private calibration environment after the production safety patch is verified.
 
 ## Beta rollout
 
@@ -78,22 +79,23 @@ real auth:     ON
 real database: ON
 real storage:  ON
 demo mode:     OFF
-mock grading:  ON
-live AI:       OFF
+mock results:   OFF
+grading gate:   ON
+live AI:        OFF
 ```
 
-The next rollout gate is a successful real-user smoke test through:
+The next rollout gate is a successful non-grading smoke test through:
 
 ```text
 login
   -> upload
-  -> mock grade
-  -> collection
+  -> grading-paused state
+  -> saved history
   -> feedback
   -> account deletion
 ```
 
-After that, live AI can be enabled with the existing timeout/retry bounds, per-user in-flight grading guard, usage limits, and cost monitoring.
+After that, run a private calibration set of already-graded books before enabling live AI for any outside user.
 
 ## Rollback
 

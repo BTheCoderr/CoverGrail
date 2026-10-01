@@ -19,7 +19,7 @@
 | QA | Regression, build, dependency audit, Chromium E2E, accessibility, security-header checks |
 | Rollout | Real production data flow now; live vision grading can be enabled separately |
 
-CoverGrail deliberately validates the **real auth/storage/RLS/collection pipeline before spending model credits**. That makes the beta useful for testing product reliability even while grading remains in deterministic mock mode.
+CoverGrail deliberately validates the **real auth/storage/RLS/collection pipeline before spending model credits**. While grading validation is paused, production does not create mock grade results and paid checkout is disabled.
 <!-- portfolio-refresh:end -->
 
 **AI-assisted pre-grading decision support for comic collectors — before you slab it, scan it.**
@@ -43,9 +43,10 @@ CoverGrail is running against its dedicated production Supabase backend.
 - Row Level Security across user data
 - Self-service account deletion
 - Feedback and privacy-safe product telemetry
-- Production grading currently runs in **mock mode** while the complete user flow is validated
-- Live AI grading can be enabled independently after beta validation
-- Stripe infrastructure is present but paid actions remain server-gated
+- Production grading is **paused** while `MOCK_GRADE=true`; new scans are never shown fabricated grades
+- Existing mock rows are visibly labeled as sample output
+- Live AI grading can be enabled privately for calibration before beta rollout
+- Stripe infrastructure is present, but checkout is disabled server-side while grading is paused
 
 Current runtime flags:
 
@@ -108,7 +109,8 @@ Next.js 16 / React 19
   |      - delete-account
   |
   +--> AI grading adapter
-  |      - deterministic mock mode for beta
+  |      - sample output for marketing/demo surfaces only
+  |      - production grading gate while mock mode is enabled
   |      - OpenAI-compatible live vision path
   |
   +--> Stripe-ready billing layer
@@ -127,8 +129,10 @@ Implemented safeguards include:
 - server-only Supabase secret key
 - publishable key only in browser-facing configuration
 - atomic/idempotent scan-quota consumption
-- browser users cannot modify billing, plan, or scan-credit fields
+- browser users cannot modify billing, plan, scan-credit, grading-status, or quota-consumption fields
+- browser users cannot forge AI result rows
 - duplicate-scan grading lock plus one in-flight grading job per user
+- stale grading locks recover after two minutes and failed scans can be retried
 - server-side image signature validation
 - JWT-protected account-deletion Edge Function
 - full account cleanup including stored comic images
@@ -148,11 +152,13 @@ Accepted image formats:
 
 Validation is performed from the file signature, not only the filename or browser-provided MIME type.
 
-Limits:
+Limits and mobile handling:
 
-- 12 MB per image
+- Browser-side resize to about 2000px on the long edge before submission
+- Target of roughly 600 KB per prepared image so a full seven-photo set stays below the 5 MB Server Action ceiling
+- 12 MB per-image Storage/server safety cap
 - up to 4 optional corner/detail images
-- 60 MB combined upload limit
+- bucket-level MIME and file-size restrictions mirror application validation
 
 ## Reliability
 

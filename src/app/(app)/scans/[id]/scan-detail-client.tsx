@@ -43,6 +43,7 @@ type ScanResultRow = {
   estimated_grading_cost: number | null;
   estimated_upside: number | null;
   next_steps: string[];
+  raw_ai_response?: unknown;
 };
 
 type ConfirmedGradeRow = {
@@ -73,6 +74,39 @@ function confidenceDisplayText(result: ScanResultRow | null) {
   return confidenceLabel(result.confidence);
 }
 
+function isMockResult(result: ScanResultRow | null): boolean {
+  const raw = result?.raw_ai_response;
+  return Boolean(
+    raw &&
+      typeof raw === "object" &&
+      "model" in raw &&
+      (raw as { model?: unknown }).model === "mock",
+  );
+}
+
+function friendlyScanError(code?: string | null): string {
+  switch (code) {
+    case "grading_validation_paused":
+      return "Live grading is paused while CoverGrail validates accuracy. Your uploaded scan is still saved.";
+    case "grading_timeout":
+      return "Grading took too long. You can retry this scan without uploading the photos again.";
+    case "grading_guard_failed":
+      return "CoverGrail could not verify grading capacity. Please retry.";
+    case "missing_images":
+      return "CoverGrail could not find the uploaded photos for this scan.";
+    case "image_access_failed":
+      return "CoverGrail could not securely open one of the uploaded photos.";
+    case "result_save_failed":
+      return "The grading result could not be saved. Please retry.";
+    case "upload_failed":
+      return "The scan upload did not finish successfully.";
+    case "grade_failed":
+      return "Grading failed. Please retry this scan.";
+    default:
+      return "Something went wrong while analyzing this scan. Please retry.";
+  }
+}
+
 export function ScanDetailClient({
   scanId,
   initial,
@@ -88,6 +122,9 @@ export function ScanDetailClient({
   const [savedFlash, setSavedFlash] = useState(false);
   const [gradeOpen, setGradeOpen] = useState(false);
   const [gradeBusy, setGradeBusy] = useState(false);
+  const [retryBusy, setRetryBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [clientTimedOut, setClientTimedOut] = useState(false);
   const startedGrade = useRef(false);
 
   const refresh = useCallback(async () => {
@@ -123,6 +160,16 @@ export function ScanDetailClient({
     return () => clearInterval(timer);
   }, [demo, data.scan.status, data.result, refresh]);
 
+  useEffect(() => {
+    if (demo) return;
+    const waiting =
+      (data.scan.status === "pending" || data.scan.status === "grading") &&
+      !data.result;
+    if (!waiting) return;
+    const timer = setTimeout(() => setClientTimedOut(true), 125_000);
+    return () => clearTimeout(timer);
+  }, [demo, data.scan.status, data.result]);
+
   const defects = useMemo(() => {
     const raw = data.result?.detected_defects;
     if (!Array.isArray(raw)) return [];
@@ -132,8 +179,13 @@ export function ScanDetailClient({
   async function handleSave() {
     if (demo) return;
     setSaveBusy(true);
+    setActionError(null);
     try {
-      await fetch(`/api/scans/${scanId}/save`, { method: "POST" });
+      const response = await fetch(`/api/scans/${scanId}/save`, { method: "POST" });
+      if (!response.ok) {
+        setActionError("Could not update the saved status. Please try again.");
+        return;
+      }
       setSavedFlash(true);
       await refresh();
       setTimeout(() => setSavedFlash(false), 2400);
@@ -142,10 +194,36 @@ export function ScanDetailClient({
     }
   }
 
+  async function handleRetry() {
+    if (demo || retryBusy) return;
+    setRetryBusy(true);
+    setActionError(null);
+    setClientTimedOut(false);
+    startedGrade.current = true;
+
+    try {
+      const response = await fetch("/api/grade-scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scanId }),
+      });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        setActionError(body?.error ?? "Could not retry grading. Please try again.");
+      }
+      await refresh();
+    } finally {
+      setRetryBusy(false);
+    }
+  }
+
   const processing =
     (data.scan.status === "pending" || data.scan.status === "grading") &&
     !data.result;
   const failed = data.scan.status === "failed";
+  const mockResult = isMockResult(data.result);
 
   return (
     <div className="space-y-8">
@@ -181,31 +259,69 @@ export function ScanDetailClient({
         </Link>
       </div>
 
+      {actionError ? (
+        <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+          {actionError}
+        </p>
+      ) : null}
+
       {processing ? (
         <SlabCard label="Processing">
-          <div className="flex flex-col items-center gap-4 py-10 text-center">
-            <div className="h-10 w-10 animate-spin rounded-full border-2 border-amber-400/30 border-t-amber-400" />
-            <p className="text-sm text-zinc-400">
-              Running your pre-submission estimate. This can take up to a
-              minute.
-            </p>
-          </div>
+          {clientTimedOut ? (
+            <div className="flex flex-col items-center gap-4 py-8 text-center">
+              <p className="max-w-xl text-sm text-zinc-300">
+                This scan is taking longer than expected. Retry it without uploading the photos again.
+              </p>
+              <button
+                type="button"
+                onClick={() => void handleRetry()}
+                disabled={retryBusy}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-amber-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-amber-300 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-300"
+              >
+                {retryBusy ? "Retrying…" : "Retry grading"}
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-4 py-10 text-center">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-amber-400/30 border-t-amber-400" />
+              <p className="text-sm text-zinc-400">
+                Running your pre-submission estimate. This can take up to a minute.
+              </p>
+            </div>
+          )}
         </SlabCard>
       ) : null}
 
       {failed ? (
-        <SlabCard label="Scan failed">
-          <p className="text-sm text-red-300">
-            {data.scan.error_message ??
-              "Something went wrong while analyzing this scan."}
+        <SlabCard label="Scan needs attention">
+          <p className="text-sm text-red-200">
+            {friendlyScanError(data.scan.error_message)}
           </p>
-          <Link
-            href="/scans/new"
-            className="mt-6 inline-flex text-sm font-semibold text-amber-400 hover:underline"
-          >
-            Try a new scan
-          </Link>
+          <div className="mt-6 flex flex-wrap gap-3">
+            {data.scan.error_message !== "grading_validation_paused" ? (
+              <button
+                type="button"
+                onClick={() => void handleRetry()}
+                disabled={retryBusy}
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-amber-400 px-5 text-sm font-semibold text-zinc-950 hover:bg-amber-300 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-300"
+              >
+                {retryBusy ? "Retrying…" : "Retry this scan"}
+              </button>
+            ) : null}
+            <Link
+              href="/scans/new"
+              className="inline-flex min-h-11 items-center text-sm font-semibold text-amber-400 hover:underline"
+            >
+              Start a new scan
+            </Link>
+          </div>
         </SlabCard>
+      ) : null}
+
+      {mockResult ? (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 px-4 py-4 text-sm font-semibold text-amber-100">
+          SAMPLE RESULT — this stored result came from mock mode and was not based on your photos.
+        </div>
       ) : null}
 
       {data.result ? (
@@ -302,7 +418,7 @@ export function ScanDetailClient({
             }
             className="inline-flex h-11 items-center justify-center rounded-xl bg-amber-400 px-6 text-sm font-semibold text-zinc-950 hover:bg-amber-300 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400"
           >
-            {saveBusy ? "Saving…" : "Save to collection"}
+            {saveBusy ? "Saving…" : data.scan.user_saved_at ? "Saved" : "Mark as saved"}
           </button>
           <button
             type="button"
@@ -385,7 +501,11 @@ export function ScanDetailClient({
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
               });
-              if (!res.ok) return;
+              if (!res.ok) {
+                setActionError("Could not save the confirmed grade. Please try again.");
+                return;
+              }
+              setActionError(null);
               setGradeOpen(false);
               await refresh();
             } finally {

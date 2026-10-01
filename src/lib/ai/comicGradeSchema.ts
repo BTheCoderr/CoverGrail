@@ -1,6 +1,18 @@
 import { z } from "zod";
 
-/** Matches product JSON schema — plus estimated_upside for the results UI. */
+export const OFFICIAL_COMIC_GRADE_POINTS = [
+  0.5, 1.0, 1.5, 1.8, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0,
+  6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.2, 9.4, 9.6, 9.8, 9.9, 10.0,
+] as const;
+
+const comicGradePointSchema = z
+  .number()
+  .refine(
+    (value) => (OFFICIAL_COMIC_GRADE_POINTS as readonly number[]).includes(value),
+    "grade must use a standard comic grading scale point",
+  );
+
+/** Matches product JSON schema — economics stay null until backed by real fee/comps data. */
 export const defectAreaSchema = z.enum([
   "front_cover",
   "back_cover",
@@ -29,8 +41,8 @@ export const detectedDefectItemSchema = z.object({
 
 export const comicGradeResultSchema = z
   .object({
-    predicted_grade_low: z.number().min(0).max(10),
-    predicted_grade_high: z.number().min(0).max(10),
+    predicted_grade_low: comicGradePointSchema,
+    predicted_grade_high: comicGradePointSchema,
     confidence: z.enum(["low", "medium", "high"]),
     recommendation: z.enum([
       "submit",
@@ -42,8 +54,8 @@ export const comicGradeResultSchema = z
     photo_quality_score: z.number().int().min(1).max(10),
     detected_defects: z.array(detectedDefectItemSchema),
     reasoning_summary: z.string(),
-    estimated_grading_cost: z.number().min(0),
-    estimated_upside: z.number().nullable(),
+    estimated_grading_cost: z.null(),
+    estimated_upside: z.null(),
     next_steps: z.array(z.string()),
   })
   .strict()
@@ -71,8 +83,8 @@ export const comicGradeJsonSchema = {
     "next_steps",
   ],
   properties: {
-    predicted_grade_low: { type: "number" },
-    predicted_grade_high: { type: "number" },
+    predicted_grade_low: { type: "number", enum: [...OFFICIAL_COMIC_GRADE_POINTS] },
+    predicted_grade_high: { type: "number", enum: [...OFFICIAL_COMIC_GRADE_POINTS] },
     confidence: {
       type: "string",
       enum: ["low", "medium", "high"],
@@ -118,10 +130,8 @@ export const comicGradeJsonSchema = {
       },
     },
     reasoning_summary: { type: "string" },
-    estimated_grading_cost: { type: "number" },
-    estimated_upside: {
-      anyOf: [{ type: "number" }, { type: "null" }],
-    },
+    estimated_grading_cost: { type: "null" },
+    estimated_upside: { type: "null" },
     next_steps: {
       type: "array",
       items: { type: "string" },

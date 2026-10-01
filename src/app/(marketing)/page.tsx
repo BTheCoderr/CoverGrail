@@ -1,7 +1,6 @@
 import { ExampleResult } from "@/components/landing/ExampleResult";
 import { Hero } from "@/components/landing/Hero";
 import { HowItWorks } from "@/components/landing/HowItWorks";
-import { MarketMatrixLanding } from "@/components/landing/MarketMatrixLanding";
 import { PricingPreview } from "@/components/landing/PricingPreview";
 import { Disclaimer } from "@/components/disclaimer";
 import Link from "next/link";
@@ -43,27 +42,10 @@ export default function LandingPage() {
 
       <HowItWorks />
 
-      <MarketMatrixLanding />
 
       <ExampleResult />
 
       <PricingPreview />
-
-      <section className="rounded-2xl border border-amber-500/25 bg-gradient-to-br from-zinc-900/80 to-zinc-950 px-6 py-10 text-center sm:px-12">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-400/90">
-          Enterprise licensing
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-sm text-zinc-400">
-          Retailers, auction houses, and platforms: API access, white-label options, and custom
-          integrations—starting at $10,000/year. Tell us what you are building.
-        </p>
-        <a
-          href="mailto:hello@covergrail.com?subject=CoverGrail%20Enterprise%20Licensing"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-xl border border-zinc-600 px-6 text-sm font-semibold text-zinc-100 hover:border-amber-500/40 hover:text-amber-400"
-        >
-          Contact sales
-        </a>
-      </section>
 
       <section className="rounded-2xl border border-zinc-800/80 bg-zinc-950/60 px-6 py-8">
         <Disclaimer className="text-center text-sm text-zinc-400" />
