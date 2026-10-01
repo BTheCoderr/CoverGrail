@@ -11,6 +11,12 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  experimental: {
+    serverActions: {
+      // Client-side resizing keeps a full seven-photo set below this ceiling.
+      bodySizeLimit: "5mb",
+    },
+  },
   async headers() {
     return [
       {
