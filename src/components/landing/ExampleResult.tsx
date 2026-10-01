@@ -14,9 +14,8 @@ export function ExampleResult() {
       <h2 className="text-center text-sm font-semibold uppercase tracking-[0.2em] text-amber-400/90">
         Example result
       </h2>
-      <p className="mx-auto mt-3 max-w-2xl text-center text-sm text-zinc-400">
-        Illustrative slab-style output—your scan will reflect your photos and
-        metadata.
+      <p className="mx-auto mt-3 max-w-2xl rounded-xl border border-amber-500/30 bg-amber-950/20 px-4 py-3 text-center text-sm text-amber-100">
+        SAMPLE RESULT — illustrative only and not based on your photos.
       </p>
 
       <div className="mt-10 grid gap-6 lg:grid-cols-3">
