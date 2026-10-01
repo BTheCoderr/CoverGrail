@@ -218,7 +218,6 @@ export async function createScan(formData: FormData) {
         .update({
           status: "failed",
           error_message: "upload_failed",
-          grading_started_at: null,
         })
         .eq("id", scanId)
         .eq("user_id", userId);
