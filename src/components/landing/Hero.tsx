@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { isMockGradeEnabled } from "@/lib/ai/mode";
 
 export function Hero() {
+  const gradingValidation = isMockGradeEnabled();
+
   return (
     <section className="mx-auto max-w-3xl text-center">
       <p className="mb-3 text-sm font-medium tracking-wide text-zinc-400">
@@ -18,16 +21,16 @@ export function Hero() {
         first, or sell raw.
       </p>
       <p className="mx-auto mt-4 max-w-xl text-sm text-zinc-400">
-        CoverGrail gives collectors a pre-submission grade range, defect report,
-        and submit-or-sell recommendation before they spend money on professional
-        grading.
+        {gradingValidation
+          ? "Live photo grading is currently paused while accuracy is calibrated. You can still explore the workflow and sample output."
+          : "CoverGrail gives collectors a pre-submission grade range, defect report, and condition-based recommendation before they spend money on professional grading."}
       </p>
       <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
         <Link
           href="/login"
           className="inline-flex h-12 items-center justify-center rounded-xl bg-amber-400 px-8 text-sm font-semibold text-zinc-950 shadow-[0_0_40px_-10px_rgba(251,191,36,0.55)] transition hover:bg-amber-300"
         >
-          Get 3 Free Pre-Grades
+          {gradingValidation ? "Explore the validation beta" : "Get 3 Free Pre-Grades"}
         </Link>
         <a
           href="#example-result"
