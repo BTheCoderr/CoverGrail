@@ -2,6 +2,7 @@
 
 import { userHasScanQuota } from "@/lib/billing/scanQuota";
 import { isDemoMode } from "@/lib/demo/mode";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { recordProductEvent } from "@/lib/telemetry";
 import {
@@ -133,16 +134,17 @@ export async function createScan(formData: FormData) {
           ? estimated_raw_value
           : null,
       notes,
-      status: "pending",
     })
     .select("id")
     .single();
 
   if (scanErr || !scanRow) {
-    redirect(`/scans/new?error=${encodeURIComponent(scanErr?.message ?? "create_failed")}`);
+    console.error("[create-scan] Could not create scan:", scanErr?.message ?? "create_failed");
+    redirect("/scans/new?error=create_failed");
   }
 
   const scanId = scanRow.id as string;
+  const uploadedPaths: string[] = [];
 
   async function upload(
     image_type: "front_cover" | "back_cover" | "spine",
@@ -159,6 +161,7 @@ export async function createScan(formData: FormData) {
         upsert: false,
       });
     if (error) throw error;
+    uploadedPaths.push(path);
     const { error: insErr } = await supabase.from("scan_images").insert({
       scan_id: scanId,
       user_id: userId,
@@ -187,6 +190,7 @@ export async function createScan(formData: FormData) {
           upsert: false,
         });
       if (error) throw error;
+      uploadedPaths.push(path);
       const { error: insErr } = await supabase.from("scan_images").insert({
         scan_id: scanId,
         user_id: userId,
@@ -198,13 +202,37 @@ export async function createScan(formData: FormData) {
       cornerIndex += 1;
     }
   } catch (e) {
-    await supabase
-      .from("comic_scans")
-      .update({
-        status: "failed",
-        error_message: e instanceof Error ? e.message : "upload_failed",
-      })
-      .eq("id", scanId);
+    if (uploadedPaths.length > 0) {
+      const { error: cleanupError } = await supabase.storage
+        .from("scan-images")
+        .remove(uploadedPaths);
+      if (cleanupError) {
+        console.error("[create-scan] Could not clean partial upload:", cleanupError.message);
+      }
+    }
+
+    try {
+      const admin = createAdminClient();
+      await admin
+        .from("comic_scans")
+        .update({
+          status: "failed",
+          error_message: "upload_failed",
+          grading_started_at: null,
+        })
+        .eq("id", scanId)
+        .eq("user_id", userId);
+    } catch (adminError) {
+      console.error(
+        "[create-scan] Could not mark failed upload:",
+        adminError instanceof Error ? adminError.message : "admin_unavailable",
+      );
+    }
+
+    console.error(
+      "[create-scan] Upload failed:",
+      e instanceof Error ? e.message : "upload_failed",
+    );
     await recordProductEvent(supabase, userId, "scan_upload_failed", scanId, {
       status: "failed",
     });
