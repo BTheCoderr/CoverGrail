@@ -6,14 +6,6 @@ export const metadata: Metadata = {
   title: "Sign in",
 };
 
-function safeDecodeQuery(s: string): string {
-  try {
-    return decodeURIComponent(s);
-  } catch {
-    return s;
-  }
-}
-
 function parseRateLimitSeconds(raw?: string): number | undefined {
   if (!raw || !/^\d+$/.test(raw)) return undefined;
   const n = parseInt(raw, 10);
@@ -22,7 +14,6 @@ function parseRateLimitSeconds(raw?: string): number | undefined {
 
 function loginMessage(
   reason?: string,
-  detail?: string,
   status?: string,
   rateSeconds?: number,
 ): string | null {
@@ -35,28 +26,19 @@ function loginMessage(
     case "auth":
       return "Authentication failed. Please try again.";
     case "missing-env":
-      return (
-        "missing-env: No Supabase URL or public API key on this server. In Netlify → Environment variables, set " +
-        "NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY (legacy JWT `eyJ…` or publishable `sb_publishable_…` in the same variable). " +
-        "Clear-cache redeploy after changes."
-      );
     case "invalid-supabase-url":
     case "invalid-url":
-      return "invalid-supabase-url: NEXT_PUBLIC_SUPABASE_URL is not a valid URL. Fix it and redeploy.";
+      return "Sign-in is temporarily unavailable. Please try again later.";
     case "auth-health-fetch-failed":
     case "fetch-failed":
-      return (
-        "Diagnostics could not reach Supabase Auth, but you can still try sending a magic link. " +
-        `(Technical detail: ${detail ? safeDecodeQuery(detail).slice(0, 200) : "network"}.)`
-      );
+      return "Sign-in diagnostics are temporarily unavailable, but you can still request an email link.";
     case "auth-health-non-200":
-      return (
-        "Diagnostics could not reach Supabase Auth (unexpected HTTP status), but you can still try sending a magic link. " +
-        `(HTTP ${status ?? "?"}.)`
-      );
+      return status
+        ? "Sign-in diagnostics returned an unexpected response, but you can still request an email link."
+        : "Sign-in diagnostics are temporarily unavailable, but you can still request an email link.";
     case "sign-in-with-otp-failed":
     case "sign-in-failed":
-      return `sign-in-with-otp-failed: ${detail ? safeDecodeQuery(detail) : "Magic link request failed."}`;
+      return "We could not send the sign-in link. Please verify your email and try again.";
     case "missing_email":
       return "Please enter your email address.";
     default:
@@ -64,14 +46,12 @@ function loginMessage(
   }
 }
 
-/** Legacy ?error=auth from /auth/callback should not display as the literal "auth". */
-function normalizeLegacyErrorMessage(decoded: string | null): string | null {
-  if (!decoded) return null;
-  const t = decoded.trim();
-  if (t.toLowerCase() === "auth") {
-    return "Authentication failed. Please try again.";
-  }
-  return decoded;
+function normalizeLegacyErrorMessage(raw: string | null): string | null {
+  if (!raw) return null;
+  const value = raw.trim().toLowerCase();
+  if (value === "auth") return "Authentication failed. Please try again.";
+  if (value === "missing_email") return "Please enter your email address.";
+  return "Sign-in failed. Please try again.";
 }
 
 export default async function LoginPage({
@@ -90,10 +70,9 @@ export default async function LoginPage({
   const params = await searchParams;
 
   const rateSeconds = parseRateLimitSeconds(params.seconds);
-  const reasonMessage = loginMessage(params.reason, params.detail, params.status, rateSeconds);
+  const reasonMessage = loginMessage(params.reason, params.status, rateSeconds);
 
-  const legacyRaw =
-    params.error && !params.reason ? safeDecodeQuery(params.error) : null;
+  const legacyRaw = params.error && !params.reason ? params.error : null;
   const legacyError = normalizeLegacyErrorMessage(legacyRaw);
 
   const alertText = reasonMessage ?? legacyError;
@@ -119,7 +98,7 @@ export default async function LoginPage({
           Sign in to CoverGrail
         </h1>
         <p className="mt-3 text-center text-sm text-zinc-400">
-          Magic link authentication powered by Supabase.
+          Sign in securely with a one-time link sent to your email.
         </p>
 
         {linkSentSuccess ? (
