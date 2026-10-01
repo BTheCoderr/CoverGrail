@@ -15,9 +15,9 @@ const TIERS = [
   },
   {
     name: "Collector",
-    price: "$19",
+    price: "$19.99",
     detail: "/mo · 25 scans",
-    bullets: ["Batch friendly", "History retained"],
+    bullets: ["Private grading history", "25 scans/month when paid grading launches"],
   },
 ];
 
@@ -28,7 +28,7 @@ export function PricingPreview() {
         Pricing
       </h2>
       <p className="mx-auto mt-3 max-w-xl text-center text-sm text-zinc-400">
-        Start free—upgrade when CoverGrail becomes part of your submission prep.
+        Start free. Paid plans remain paused while live grading quality is validated.
       </p>
       <div className="mt-10 grid gap-4 md:grid-cols-3">
         {TIERS.map((t) => (
