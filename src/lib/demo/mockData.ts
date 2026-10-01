@@ -30,7 +30,7 @@ export const DEMO_COLLECTION_ROWS: DemoCollectionRow[] = [
     id: DEMO_SCAN_ID,
     title: "Batman #423",
     gradeLow: 8.0,
-    gradeHigh: 8.8,
+    gradeHigh: 8.5,
     confidenceLabel: "76%",
     savedAtLabel: "Mar 18, 2026",
   },
@@ -38,7 +38,7 @@ export const DEMO_COLLECTION_ROWS: DemoCollectionRow[] = [
     id: DEMO_SCAN_ID,
     title: "X-Men #1",
     gradeLow: 7.5,
-    gradeHigh: 8.4,
+    gradeHigh: 8.5,
     confidenceLabel: "71%",
     savedAtLabel: "Feb 9, 2026",
   },
@@ -100,8 +100,8 @@ export function getDemoScanDetailPayload(): ScanDetailPayload {
       ],
       reasoning_summary:
         "Likely worth submitting if pressing improves presentation — spine and corners respond well to conservative pressing.",
-      estimated_grading_cost: 50,
-      estimated_upside: 175,
+      estimated_grading_cost: null,
+      estimated_upside: null,
       next_steps: [
         "Press first, then consider submission once presentation tightens.",
         "Re-photo under neutral light if any glare masked subtle corner defects.",
