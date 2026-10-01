@@ -170,8 +170,13 @@ export async function POST(request: Request) {
   if (activeGradesError) {
     await admin
       .from("comic_scans")
-      .update({ status: "failed", error_message: "grading_guard_failed" })
-      .eq("id", scanId);
+      .update({
+        status: "failed",
+        error_message: "grading_guard_failed",
+        grading_started_at: null,
+      })
+      .eq("id", scanId)
+      .eq("user_id", user.id);
     return NextResponse.json(
       { error: "Could not verify grading capacity" },
       { status: 500 },
@@ -181,8 +186,9 @@ export async function POST(request: Request) {
   if ((otherActiveGrades ?? []).length > 0) {
     await admin
       .from("comic_scans")
-      .update({ status: "pending", error_message: null })
-      .eq("id", scanId);
+      .update({ status: "pending", error_message: null, grading_started_at: null })
+      .eq("id", scanId)
+      .eq("user_id", user.id);
 
     return NextResponse.json(
       { error: "Another scan is already being graded. Try again shortly." },
@@ -222,13 +228,15 @@ export async function POST(request: Request) {
       .createSignedUrl(path, 60 * 30);
 
     if (signErr || !signed?.signedUrl) {
-      await supabase
+      await admin
         .from("comic_scans")
         .update({
           status: "failed",
-          error_message: signErr?.message ?? "sign_failed",
+          error_message: "image_access_failed",
+          grading_started_at: null,
         })
-        .eq("id", scanId);
+        .eq("id", scanId)
+        .eq("user_id", user.id);
       return NextResponse.json(
         { error: "Could not sign image URLs" },
         { status: 500 },
@@ -266,14 +274,19 @@ export async function POST(request: Request) {
     });
 
     if (insErr) {
-      await supabase
+      await admin
         .from("comic_scans")
         .update({
           status: "failed",
-          error_message: insErr.message,
+          error_message: "result_save_failed",
+          grading_started_at: null,
         })
-        .eq("id", scanId);
-      return NextResponse.json({ error: insErr.message }, { status: 500 });
+        .eq("id", scanId)
+        .eq("user_id", user.id);
+      return NextResponse.json(
+        { error: "Could not save grading result." },
+        { status: 500 },
+      );
     }
 
     await admin
