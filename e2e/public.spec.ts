@@ -7,7 +7,9 @@ test("landing page presents the core product", async ({ page }) => {
       name: /Know if your comic is worth grading before you pay CGC/i,
     }),
   ).toBeVisible();
-  await expect(page.getByRole("link", { name: /Get 3 Free Pre-Grades/i })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Explore the validation beta/i }),
+  ).toBeVisible();
   await expect(page).toHaveTitle(/CoverGrail/);
 });
 
