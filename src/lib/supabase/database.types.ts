@@ -63,7 +63,6 @@ export type Database = {
           error_message?: string | null
           estimated_raw_value?: number | null
           grading_started_at?: string | null
-          grading_started_at?: string | null
           id?: string
           issue_number?: string | null
           notes?: string | null
@@ -79,6 +78,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           estimated_raw_value?: number | null
+          grading_started_at?: string | null
           id?: string
           issue_number?: string | null
           notes?: string | null
