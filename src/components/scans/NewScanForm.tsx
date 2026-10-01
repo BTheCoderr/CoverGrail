@@ -155,18 +155,21 @@ export function NewScanForm() {
               name="front"
               description="Full bleed front cover, parallel to camera."
               required
+              disabled={pending}
             />
             <PhotoField
               label="Back cover"
               name="back"
               description="Include barcode zone if present."
               required
+              disabled={pending}
             />
             <PhotoField
               label="Spine close-up"
               name="spine"
               description="Show spine rolls and ticks clearly."
               required
+              disabled={pending}
             />
             <label className="block space-y-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
@@ -256,11 +259,13 @@ function PhotoField({
   name,
   description,
   required,
+  disabled = false,
 }: {
   label: string;
   name: string;
   description: string;
   required?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <label className="block space-y-2">
@@ -273,6 +278,7 @@ function PhotoField({
         type="file"
         accept="image/jpeg,image/png,image/webp"
         required={required}
+        disabled={disabled}
         className="block w-full cursor-pointer rounded-xl border border-dashed border-zinc-700 bg-zinc-950/60 px-4 py-6 text-sm text-zinc-300 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-800 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
       />
       <span className="text-xs text-zinc-400">{description}</span>
