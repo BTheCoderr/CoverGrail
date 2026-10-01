@@ -97,5 +97,7 @@ test("mock grading mode keeps paid checkout disabled", async ({ request }) => {
 
 test("landing labels the example grade as sample output", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByText(/SAMPLE RESULT/i)).toBeVisible();
+  await expect(
+    page.getByText("SAMPLE RESULT — illustrative only and not based on your photos."),
+  ).toBeVisible();
 });
