@@ -165,10 +165,7 @@ export function ScanDetailClient({
     const waiting =
       (data.scan.status === "pending" || data.scan.status === "grading") &&
       !data.result;
-    if (!waiting) {
-      setClientTimedOut(false);
-      return;
-    }
+    if (!waiting) return;
     const timer = setTimeout(() => setClientTimedOut(true), 125_000);
     return () => clearTimeout(timer);
   }, [demo, data.scan.status, data.result]);
