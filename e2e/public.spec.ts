@@ -30,6 +30,9 @@ test("login stays user-facing and hides deploy diagnostics", async ({ page }) =>
   await page.goto("/login");
   await expect(page.getByRole("heading", { name: /Sign in to CoverGrail/i })).toBeVisible();
   await expect(page.getByText(/Check Supabase connectivity/i)).toHaveCount(0);
+
+  await page.goto("/login?reason=sign-in-with-otp-failed&detail=AUDIT_TEST_SHOULD_NOT_RENDER");
+  await expect(page.getByText(/AUDIT_TEST_SHOULD_NOT_RENDER/i)).toHaveCount(0);
 });
 
 test("non-demo protected route redirects signed-out users", async ({ page }) => {
@@ -78,4 +81,19 @@ test("core public pages do not overflow the viewport", async ({ page }) => {
     );
     expect(overflow, `horizontal overflow on ${route}`).toBe(false);
   }
+});
+
+
+test("mock grading mode keeps paid checkout disabled", async ({ request }) => {
+  const response = await request.post("/api/create-checkout-session", {
+    data: { plan: "single_scan" },
+  });
+  expect(response.status()).toBe(503);
+  const body = await response.json();
+  expect(body.error).toMatch(/paused/i);
+});
+
+test("landing labels the example grade as sample output", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText(/SAMPLE RESULT/i)).toBeVisible();
 });
