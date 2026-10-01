@@ -10,15 +10,11 @@ type Tier = {
   subtitle: string;
   bullets: string[];
   highlight?: boolean;
-  mode: "link" | "stripe" | "mailto";
+  mode: "link" | "stripe";
   href?: string;
-  mailtoHref?: string;
   buttonLabel: string;
   checkoutPlan?: "single_scan" | "collector" | "dealer";
 };
-
-const ENTERPRISE_MAIL =
-  "mailto:hello@covergrail.com?subject=CoverGrail%20Enterprise%20Licensing";
 
 const TIERS: Tier[] = [
   {
@@ -26,10 +22,10 @@ const TIERS: Tier[] = [
     price: "$0",
     subtitle: "Start here",
     bullets: [
-      "Includes 3 free scans",
-      "Basic grade range",
-      "Defect breakdown",
-      "Save scan history",
+      "3 free grading credits when live grading opens",
+      "Private scan history",
+      "Sample grading workflow",
+      "No payment required during validation",
     ],
     mode: "link",
     href: "/login",
@@ -73,18 +69,6 @@ const TIERS: Tier[] = [
     mode: "stripe",
     checkoutPlan: "dealer",
     buttonLabel: "Subscribe",
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    subtitle: "Future partnerships",
-    bullets: [
-      "For retailers, auction houses, and collector platforms",
-      "Contact us to discuss future integrations",
-    ],
-    mode: "mailto",
-    mailtoHref: ENTERPRISE_MAIL,
-    buttonLabel: "Contact Sales",
   },
 ];
 
@@ -162,14 +146,6 @@ export default async function PricingPage({
               >
                 {t.buttonLabel}
               </Link>
-            ) : null}
-            {t.mode === "mailto" && t.mailtoHref ? (
-              <a
-                href={t.mailtoHref}
-                className="mt-8 inline-flex h-11 items-center justify-center rounded-xl border border-zinc-600 text-sm font-semibold text-zinc-100 hover:border-amber-500/40 hover:text-amber-400"
-              >
-                {t.buttonLabel}
-              </a>
             ) : null}
           </div>
         ))}
