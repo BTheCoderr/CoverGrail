@@ -1,9 +1,10 @@
 import OpenAI from "openai";
 import {
   type ComicGradeResult,
+  comicGradeJsonSchema,
   comicGradeResultSchema,
 } from "@/lib/ai/comicGradeSchema";
-import { getMockComicGrade } from "@/lib/ai/mockComicGrade";
+import { isMockGradeEnabled } from "@/lib/ai/mode";
 
 const SYSTEM_PROMPT = `You are CoverGrail, an AI pre-grading assistant for comic book collectors.
 
@@ -38,12 +39,12 @@ Rules:
 - Never claim this is an official grade.
 - Never claim affiliation with CGC or CBCS.
 - If photos are blurry, dark, overexposed, cropped, or missing key views, lower confidence and recommend rescan_photos.
-- If the grade range is low and submission economics look weak, recommend sell_raw.
+- If severe visible condition issues make professional grading unlikely to add useful condition information, recommend sell_raw.
 - If the comic presents well but visible pressable defects exist, recommend press_first.
 - If the predicted grade range is strong and confidence is high, recommend submit.
 - Be especially careful with high-grade predictions above 9.2. Small defects matter heavily at that level.
-
-Include estimated_upside as nullable number (USD): illustrative net upside vs selling raw after typical grading fees and the user-provided raw value when possible; use null if not inferable.
+- Use only standard comic grade points (for example 9.2, 9.4, 9.6, 9.8).
+- Set estimated_grading_cost and estimated_upside to null. CoverGrail computes economics only from verified external data, never from model guesses.
 
 Return only valid JSON matching this shape (no markdown):
 {
@@ -54,8 +55,8 @@ Return only valid JSON matching this shape (no markdown):
   "photo_quality_score": integer 1-10,
   "detected_defects": [{"area":"front_cover"|"back_cover"|"spine"|"corners"|"edges"|"centering"|"unknown","defect":string,"severity":"minor"|"moderate"|"major"|"severe","grade_impact":"low"|"medium"|"high"}],
   "reasoning_summary": string,
-  "estimated_grading_cost": number,
-  "estimated_upside": number|null,
+  "estimated_grading_cost": null,
+  "estimated_upside": null,
   "next_steps": string[]
 }`;
 
@@ -71,11 +72,8 @@ export async function gradeComicPhotos(params: {
   };
   model?: string;
 }): Promise<{ data: ComicGradeResult; modelId: string }> {
-  if (
-    process.env.MOCK_GRADE === "1" ||
-    process.env.MOCK_GRADE === "true"
-  ) {
-    return { data: getMockComicGrade(), modelId: "mock" };
+  if (isMockGradeEnabled()) {
+    throw new Error("Live grading is paused while mock mode is enabled");
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
@@ -125,7 +123,14 @@ export async function gradeComicPhotos(params: {
   const completion = await client.chat.completions.create({
     model,
     temperature: 0.15,
-    response_format: { type: "json_object" },
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "covergrail_comic_grade",
+        schema: comicGradeJsonSchema,
+        strict: true,
+      },
+    },
     messages: [
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content },
