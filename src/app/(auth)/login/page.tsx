@@ -107,8 +107,8 @@ export default async function LoginPage({
               Login link sent. Check your email inbox and spam folder.
             </p>
             <p className="text-emerald-100/85">
-              Do not request another link right away or Supabase may temporarily
-              rate-limit you.
+              Do not request another link right away or the sign-in service may temporarily
+              rate-limit requests.
             </p>
           </div>
         ) : null}
