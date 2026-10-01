@@ -9,7 +9,7 @@ const STEPS = [
   },
   {
     title: "Decide: submit, press first, or sell raw",
-    body: "Practical next steps weighed against typical grading fees.",
+    body: "Practical next steps based on visible condition and photo evidence; dollar economics stay separate until verified data is available.",
   },
 ];
 
