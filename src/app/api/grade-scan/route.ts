@@ -91,7 +91,6 @@ export async function POST(request: Request) {
       .update({
         status: "failed",
         error_message: "grading_validation_paused",
-        grading_started_at: null,
       })
       .eq("id", scanId)
       .eq("user_id", user.id);
