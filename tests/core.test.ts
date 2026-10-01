@@ -5,6 +5,7 @@ import {
   subscriptionAllowsMonthlyQuotaConsumption,
   userHasScanQuota,
 } from "../src/lib/billing/scanQuota.ts";
+import { isMockGradeEnabled } from "../src/lib/ai/mode.ts";
 import { detectImageType } from "../src/lib/uploads/image-validation.ts";
 import { sortScanImages } from "../src/lib/scans/sort-images.ts";
 
@@ -67,4 +68,20 @@ test("image signatures detect JPEG, PNG and WebP", () => {
     { mime: "image/webp", ext: "webp" },
   );
   assert.equal(detectImageType(Uint8Array.from([1,2,3,4,5])), null);
+});
+
+
+test("mock grading flag recognizes supported truthy values", () => {
+  const previous = process.env.MOCK_GRADE;
+  try {
+    process.env.MOCK_GRADE = "true";
+    assert.equal(isMockGradeEnabled(), true);
+    process.env.MOCK_GRADE = "1";
+    assert.equal(isMockGradeEnabled(), true);
+    process.env.MOCK_GRADE = "false";
+    assert.equal(isMockGradeEnabled(), false);
+  } finally {
+    if (previous === undefined) delete process.env.MOCK_GRADE;
+    else process.env.MOCK_GRADE = previous;
+  }
 });
