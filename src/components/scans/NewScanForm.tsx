@@ -7,7 +7,15 @@ import { useState, type FormEvent, type HTMLAttributes } from "react";
 
 const MAX_EDGE = 2000;
 const TARGET_BYTES = 600_000;
+const MAX_PREPARED_TOTAL_BYTES = 4_400_000;
 const MAX_CORNERS = 4;
+const DECODABLE_SOURCE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+]);
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -39,7 +47,7 @@ function canvasToJpeg(
 }
 
 async function prepareImage(file: File): Promise<File> {
-  if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+  if (!DECODABLE_SOURCE_TYPES.has(file.type)) {
     throw new Error("unsupported_image");
   }
 
@@ -49,7 +57,7 @@ async function prepareImage(file: File): Promise<File> {
   let quality = 0.86;
   let latest: Blob | null = null;
 
-  for (let pass = 0; pass < 6; pass += 1) {
+  for (let pass = 0; pass < 9; pass += 1) {
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
     canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
@@ -70,7 +78,9 @@ async function prepareImage(file: File): Promise<File> {
     }
   }
 
-  if (!latest) throw new Error("image_prepare_failed");
+  if (!latest || latest.size > TARGET_BYTES) {
+    throw new Error("image_prepare_failed");
+  }
 
   const baseName = file.name.replace(/\.[^.]+$/, "") || "comic-photo";
   return new File([latest], `${baseName}.jpg`, {
@@ -101,6 +111,15 @@ async function prepareUpload(formData: FormData) {
   await prepareNamedFiles(formData, "back");
   await prepareNamedFiles(formData, "spine");
   await prepareNamedFiles(formData, "corners");
+
+  const preparedBytes = ["front", "back", "spine", "corners"]
+    .flatMap((name) => formData.getAll(name))
+    .filter((value): value is File => value instanceof File)
+    .reduce((sum, file) => sum + file.size, 0);
+
+  if (preparedBytes > MAX_PREPARED_TOTAL_BYTES) {
+    throw new Error("prepared_upload_too_large");
+  }
 }
 
 export function NewScanForm() {
@@ -124,8 +143,10 @@ export function NewScanForm() {
         code === "too_many_corners"
           ? "Choose up to four optional corner close-ups."
           : code === "unsupported_image"
-            ? "Use JPEG, PNG, or WebP photos."
-            : "One or more photos could not be prepared. Try choosing them again.",
+            ? "Use JPEG, PNG, WebP, HEIC, or HEIF photos."
+            : code === "prepared_upload_too_large"
+              ? "The prepared photo set is still too large. Remove optional corner photos and try again."
+              : "One or more photos could not be prepared. Try choosing them again.",
       );
       setPending(false);
       return;
@@ -178,13 +199,13 @@ export function NewScanForm() {
               <input
                 name="corners"
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
                 multiple
                 disabled={pending}
                 className="block w-full cursor-pointer rounded-xl border border-dashed border-zinc-700 bg-zinc-950/60 px-4 py-6 text-sm text-zinc-300 file:mr-4 file:rounded-lg file:border-0 file:bg-amber-400 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-60"
               />
               <span className="text-xs text-zinc-400">
-                Select up to four JPEG, PNG, or WebP files.
+                Select up to four JPEG, PNG, WebP, HEIC, or HEIF files.
               </span>
             </label>
             <p className="rounded-xl border border-zinc-800 bg-zinc-950/50 px-4 py-3 text-xs leading-relaxed text-zinc-400">
@@ -276,7 +297,7 @@ function PhotoField({
       <input
         name={name}
         type="file"
-        accept="image/jpeg,image/png,image/webp"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
         required={required}
         disabled={disabled}
         className="block w-full cursor-pointer rounded-xl border border-dashed border-zinc-700 bg-zinc-950/60 px-4 py-6 text-sm text-zinc-300 file:mr-4 file:rounded-lg file:border-0 file:bg-zinc-800 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
